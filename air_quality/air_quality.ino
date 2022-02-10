@@ -25,9 +25,36 @@
  *
  ********************************************************************************/
 
-#include "HomeSpan.h"
+/*
+			 ESP-WROOM-32 Utilized pins
+			  ╔═════════════════════════════╗
+			  ║┌─┬─┐  ┌──┐  ┌─┐				║
+			  ║│ | └──┘  └──┘ |				║
+			  ║│ |            |				║
+			  ╠═════════════════════════════╣
+		  +++ ║GND         				 GND║ +++
+		  +++ ║3.3V      			    IO23║
+			  ║     			    	IO22║
+			  ║IO36    				     IO1║ TX
+			  ║IO39   				     IO3║ RX
+			  ║IO34      	  		    IO21║
+			  ║IO35     			    	║ NC
+			  ║IO32     				IO19║ MHZ TX
+			  ║IO33     			    IO18║ MHZ RX
+			  ║IO25      			     IO5║
+			  ║IO26     			    IO17║
+			  ║IO27     			    IO16║
+			  ║IO14    				     IO4║
+			  ║IO12      		  	     IO0║ +++, BUTTON
+			  ╚═════════════════════════════╝
+
+*/
+
+#include <HomeSpan.h>
 #include "DEV_Identify.h"
 #include "DEV_Sensors.h"
+#include <ErriezMHZ19B.h>
+#include <SoftwareSerial.h>
 
 void setup() {
 

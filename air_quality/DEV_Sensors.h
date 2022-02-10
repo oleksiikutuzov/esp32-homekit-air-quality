@@ -1,7 +1,23 @@
-#include "HomeSpan.h"
+#include <HomeSpan.h>
+#include <SoftwareSerial.h>
+#include <ErriezMHZ19B.h>
+
+#define MHZ19B_TX_PIN		19
+#define MHZ19B_RX_PIN		18
+#define INTERVAL			5	 // in seconds
+#define HOMEKIT_CO2_TRIGGER 1350 // co2 level, at which HomeKit alarm will be triggered
+
+// Declare function
+void detect_and_warm();
 ////////////////////////////////////
 //   DEVICE-SPECIFIC LED SERVICES //
 ////////////////////////////////////
+
+// Use software serial
+SoftwareSerial mhzSerial(MHZ19B_TX_PIN, MHZ19B_RX_PIN);
+
+// Declare MHZ19B object
+ErriezMHZ19B mhz19b(&mhzSerial);
 
 struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperature sensor
 
@@ -15,23 +31,67 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		co2Level	 = new Characteristic::CarbonDioxideLevel(400);
 		co2PeakLevel = new Characteristic::CarbonDioxidePeakLevel(400);
 
-		Serial.print("Configuring Carbon Dioxide Sensor"); // initialization message
-		Serial.print("\n");
+		Serial.print("Configuring Carbon Dioxide Sensor\n"); // initialization message
+
+		mhzSerial.begin(9600);
+
+		detect_and_warm();
 	}
 
 	void loop() {
 
-		if (co2Level->timeVal() > 5000) {				// check time elapsed since last update and proceed only if greater than 5 seconds
-			float co2 = co2Level->getVal<float>() + 50; // "simulate" a half-degree temperature change...
-			if (co2 > 900)								// ...but cap the maximum at 35C before starting over at -30C
-				co2 = 400;
+		if (co2Level->timeVal() > INTERVAL * 1000) { // check time elapsed since last update and proceed only if greater than 5 seconds
 
-			co2Level->setVal(co2); // set the new temperature; this generates an Event Notification and also resets the elapsed time
+			float co2_value;
 
-			LOG1("Temperature Update: ");
-			LOG1((int)co2Level);
-			LOG1("\n");
+			if (mhz19b.isReady()) {
+				co2_value = mhz19b.readCO2();
+			}
+
+			if (co2_value > 0) {
+
+				co2Level->setVal(co2_value); // set the new co value; this generates an Event Notification and also resets the elapsed time
+
+				LOG1("Carbon Dioxide Update: ");
+				LOG1((int)co2Level);
+				LOG1("\n");
+
+				// Set color indicator
+				// 400 - 800    -> green
+				// 800 - 1000   -> yellow
+				// 1000+        -> red
+				if (co2_value >= 1000) {
+					LOG1("Red color\n");
+					// pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // red color
+					// pixels.setBrightness(neopixelAutoBrightness());
+					// pixels.show();
+				} else if (co2_value >= 800) {
+					LOG1("Yellow color\n");
+					// pixels.setPixelColor(0, pixels.Color(255, 127, 0)); // orange color
+					// pixels.setBrightness(neopixelAutoBrightness());
+					// pixels.show();
+				} else if (co2_value >= 400) {
+					LOG1("Green color\n");
+					// pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // green color
+					// pixels.setBrightness(neopixelAutoBrightness());
+					// pixels.show();
+				}
+
+				// Update peak value
+				if (co2_value > co2PeakLevel->getVal()) {
+					co2PeakLevel->setVal(co2_value);
+				}
+
+				// Trigger HomeKit sensor when concentration reaches this level
+				if (co2_value > HOMEKIT_CO2_TRIGGER) {
+					co2Detected->setVal(true);
+				} else {
+					co2Detected->setVal(false);
+				}
+			}
 		}
+
+		// TODO reset peak value
 	}
 };
 
@@ -60,3 +120,30 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 	} // loop
 };
+
+// HELPER FUNCTIONS
+
+void detect_and_warm() {
+	// Detect sensor
+	Serial.println("Detecting MH-Z19B");
+	while (!mhz19b.detect()) {
+		// neopixelAutoBrightness();
+		// fadeIn(0, 255, 0, 0, 100, 1000);
+		// fadeOut(0, 255, 0, 0, 1000);
+	};
+	Serial.println("Sensor detected!");
+
+	// Print a value each 5 seconds
+	// during 3-minute warmup (for debug)
+	int tick = 0;
+	Serial.println("Warming up");
+	while (mhz19b.isWarmingUp()) {
+		// neopixelAutoBrightness();
+		// fadeIn(0, 255, 165, 0, 100, 2500);
+		// fadeOut(0, 255, 165, 0, 2500);
+		tick = tick + 5;
+		Serial.println((String)tick + " ");
+		delay(5 * 1000);
+	};
+	Serial.println("Warmed up!");
+}
