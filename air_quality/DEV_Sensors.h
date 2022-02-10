@@ -5,41 +5,19 @@
 
 struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperature sensor
 
-	SpanCharacteristic *co2Detected; // reference to the Current CO2 Characteristic
+	SpanCharacteristic *co2Detected;
 	SpanCharacteristic *co2Level;
 	SpanCharacteristic *co2PeakLevel;
 
 	DEV_CO2Sensor() : Service::CarbonDioxideSensor() { // constructor() method
 
-		// First we instantiate the main Characteristic for a Temperature Sensor, namely the Current Temperature, and set its initial value
-		// to 20 degrees.  For a real sensor, we would take a reading and initialize it to that value instead.  NOTE:  HomeKit uses
-		// Celsius for all temperature settings.  HomeKit will DISPLAY temperatures in the HomeKit app according to the settings on your iPhone.
-		// Though the HAP documentation includes a Characteristic that appears to allow the device to over-ride this setting by specifying a display
-		// of Celsius or Fahrenheit for each Service, it does not appear to work as advertised.
-
-		// temp = new Characteristic::CurrentTemperature(-10.0); // instantiate the Current Temperature Characteristic
-		// temp->setRange(-50, 100);							  // expand the range from the HAP default of 0-100 to -50 to 100 to allow for negative temperatures
 		co2Detected	 = new Characteristic::CarbonDioxideDetected(false);
 		co2Level	 = new Characteristic::CarbonDioxideLevel(400);
 		co2PeakLevel = new Characteristic::CarbonDioxidePeakLevel(400);
 
 		Serial.print("Configuring Carbon Dioxide Sensor"); // initialization message
 		Serial.print("\n");
-
-	} // end constructor
-
-	// Next we create the loop() method. This method take no arguments and returns no values. In order to simulate a temperature change
-	// from an actual sensor we will read the current value of the temp Characteristic using the getVal() function, with <float> as the
-	// template parameter; add 0.5 degrees Celsius; and then store the result in a float variable named "temperature."  This will simulate
-	// an increment of 0.5 degrees Celsius (a little less than 1 degree F).  We will cap the temperature to 35.0 degrees C, after which
-	// it resets to 10.0 and starts over.  Most importantly, we will do this once every 5 seconds by checking the elapsed time since the
-	// previous modification using timeVal().
-
-	// All of the action happens in the setVal() line where we set the value of the temp Characteristic to the new value of temperature.
-	// This tells HomeKit to send an Event Notification message to all available Controllers making them aware of the new temperature.
-	// Note that setVal() is NOT a template function and does not require you to specify <float> as a template parameter.  This is because
-	// setVal() can determine the type from the argument you specify.  If there is any chance of ambiguity, you can always specifically
-	// cast the argument such: setVal((float)temperature).
+	}
 
 	void loop() {
 
@@ -54,11 +32,8 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 			LOG1((int)co2Level);
 			LOG1("\n");
 		}
-
-	} // loop
+	}
 };
-
-//////////////////////////////////
 
 struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Quality sensor
 
@@ -80,36 +55,8 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 	void loop() {
 
-		// Note we are NOT updating the Nitrogen Dioxide Density Characteristic.  This should therefore remain steady at its initial value of 700.0
-
 		if (airQuality->timeVal() > 5000)						// modify the Air Quality Characteristic every 5 seconds
 			airQuality->setVal((airQuality->getVal() + 1) % 6); // simulate a change in Air Quality by incrementing the current value by one, and keeping in range 0-5
 
 	} // loop
 };
-
-//////////////////////////////////
-
-// What you should see in your HomeKit Application
-// -----------------------------------------------
-
-// If you load the above example, your HomeKit App should display two new tiles: one labeled "Temp Sensor" and the other labeled "Air Quality".
-// The Temp Sensor tile should indicate a temperature in the range of 10C to 35C (50F to 95F), which automatically increments and updates 0.5C every 5 seconds.
-// The Air Quality tile should cycle through "quality" states once every 10 seconds.  States are displayed in HomeKit as "Unknown", "Excellent", "Good", "Fair",
-// "Inferior" and "Poor".
-
-// Note that HomeKit only displays the values of a subset of Characteristics within the tile itself.  In the case of an Air Quality Sensor,
-// only the quality state of the Air Quality is displayed.  To see the values of other Characteristics, such as Ozone Density and Nitrogen Dioxide Density, you need to click
-// on the tile, AND open the settings screen (it would be nicer if HomeKit displayed these values on the control screen instead of making you open the settings screen).
-// On the setting screen you should see the values of all three of the Characteristics we instantiated: Air Quality, Nitrogen Dioxide Density, and Ozone Density.
-// Both the Air Quality and Ozone Density should change every 10 seconds.  The Nitrogen Dioxide Density should remain steady at the initial value of 700.0, since we
-// never use setVal() to update this Characteristic.
-
-// If you run HomeSpan at a VERBOSITY level of 2 (as specified in the library's Settings.h file), you can see that under the hood HomeSpan is sending Event Notification
-// messages to all registered controllers every 5 seconds for the Temp Sensor, and every 5 and 10 seconds for the Air Quality Sensor.  If you look carefully you'll see that
-// the Event Notification message for the Air Quality Sensor only include two values - one for the Air Quality state and one for the Ozone Density.  HomeSpan is NOT
-// sending a value for the Nitrogen Dioxide Density Characteristic since it has not been changed with a setVal() function.
-
-// FINAL NOTE: The number of decimals HomeKit displays for temperature in the HomeKit app is independent of the step size of the value itself.  This seems to be
-// hardcoded by HomeKit: for Fahrenheit a Temperature Sensor tile shows no decimals and ROUNDS to the nearest whole degree (e.g. 72, 73, 74 degrees); for Celsius
-// the tile allows for half-degree resolution and ROUNDS accordingly (e.g. 22.7 is displayed as 22.5 and 22.8 is displayed as 23.0).
