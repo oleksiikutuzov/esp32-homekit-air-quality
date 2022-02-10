@@ -7,8 +7,13 @@
 #define INTERVAL			5	 // in seconds
 #define HOMEKIT_CO2_TRIGGER 1350 // co2 level, at which HomeKit alarm will be triggered
 
-// Declare function
-void detect_and_warm();
+bool needToWarmUp = true;
+int	 tick		  = 0;
+
+// Declare functions
+void detect_mhz();
+// void warm_mhz();
+
 ////////////////////////////////////
 //   DEVICE-SPECIFIC LED SERVICES //
 ////////////////////////////////////
@@ -24,23 +29,43 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 	SpanCharacteristic *co2Detected;
 	SpanCharacteristic *co2Level;
 	SpanCharacteristic *co2PeakLevel;
+	SpanCharacteristic *co2StatusActive;
 
 	DEV_CO2Sensor() : Service::CarbonDioxideSensor() { // constructor() method
 
-		co2Detected	 = new Characteristic::CarbonDioxideDetected(false);
-		co2Level	 = new Characteristic::CarbonDioxideLevel(400);
-		co2PeakLevel = new Characteristic::CarbonDioxidePeakLevel(400);
+		co2Detected		= new Characteristic::CarbonDioxideDetected(false);
+		co2Level		= new Characteristic::CarbonDioxideLevel(400);
+		co2PeakLevel	= new Characteristic::CarbonDioxidePeakLevel(400);
+		co2StatusActive = new Characteristic::StatusActive(false);
 
 		Serial.print("Configuring Carbon Dioxide Sensor\n"); // initialization message
 
 		mhzSerial.begin(9600);
 
-		detect_and_warm();
+		detect_mhz();
 	}
 
 	void loop() {
 
-		if (co2Level->timeVal() > INTERVAL * 1000) { // check time elapsed since last update and proceed only if greater than 5 seconds
+		if (co2StatusActive->timeVal() > 5 * 1000 && needToWarmUp) {
+			// Serial.println("Need to warm up");
+
+			if (mhz19b.isWarmingUp()) {
+				Serial.println("Warming up");
+				// neopixelAutoBrightness();
+				// fadeIn(0, 255, 165, 0, 100, 2500);
+				// fadeOut(0, 255, 165, 0, 2500);
+				tick = tick + 5;
+				Serial.println((String)tick + " ");
+				co2StatusActive->setVal(false);
+			} else {
+				needToWarmUp = false;
+				co2StatusActive->setVal(true);
+				Serial.println("Is warmed up");
+			}
+		}
+
+		if (co2Level->timeVal() > INTERVAL * 1000 && !needToWarmUp) { // check time elapsed since last update and proceed only if greater than 5 seconds
 
 			float co2_value;
 
@@ -123,7 +148,7 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 // HELPER FUNCTIONS
 
-void detect_and_warm() {
+void detect_mhz() {
 	// Detect sensor
 	Serial.println("Detecting MH-Z19B");
 	while (!mhz19b.detect()) {
@@ -132,18 +157,22 @@ void detect_and_warm() {
 		// fadeOut(0, 255, 0, 0, 1000);
 	};
 	Serial.println("Sensor detected!");
-
-	// Print a value each 5 seconds
-	// during 3-minute warmup (for debug)
-	int tick = 0;
-	Serial.println("Warming up");
-	while (mhz19b.isWarmingUp()) {
-		// neopixelAutoBrightness();
-		// fadeIn(0, 255, 165, 0, 100, 2500);
-		// fadeOut(0, 255, 165, 0, 2500);
-		tick = tick + 5;
-		Serial.println((String)tick + " ");
-		delay(5 * 1000);
-	};
-	Serial.println("Warmed up!");
 }
+
+// void warm_mhz() {
+// 	// Print a value each 5 seconds
+// 	// during 3-minute warmup (for debug)
+// 	Serial.println("Warming up");
+// 	if (mhz19b.isWarmingUp()) {
+// 		// neopixelAutoBrightness();
+// 		// fadeIn(0, 255, 165, 0, 100, 2500);
+// 		// fadeOut(0, 255, 165, 0, 2500);
+// 		tick = tick + 5;
+// 		Serial.println((String)tick + " ");
+// 		co2StatusActive->setVal(false);
+// 	} else {
+// 		needToWarmUp = false;
+// 		co2StatusActive->setVal(true);
+// 	}
+// 	// Serial.println("Warmed up!");
+// }
