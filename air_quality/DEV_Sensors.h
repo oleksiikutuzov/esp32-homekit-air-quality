@@ -1,18 +1,26 @@
 #include <HomeSpan.h>
 #include <SoftwareSerial.h>
 #include <ErriezMHZ19B.h>
+#include <Adafruit_NeoPixel.h>
 
 #define MHZ19B_TX_PIN		19
 #define MHZ19B_RX_PIN		18
 #define INTERVAL			5	 // in seconds
 #define HOMEKIT_CO2_TRIGGER 1350 // co2 level, at which HomeKit alarm will be triggered
+#define NEOPIXEL_PIN		16	 // Pin to which NeoPixel strip is connected
+#define NUMPIXELS			1	 // Number of pixels
+#define BRIGHTNESS_DEFAULT	10	 // Default (dimmed) brightness
+#define BRIGHTNESS_MAX		100	 // maximum brightness of CO2 indicator led
 
 bool needToWarmUp = true;
+bool playInitAnim = true;
 int	 tick		  = 0;
 
 // Declare functions
 void detect_mhz();
-// void warm_mhz();
+void fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
+void fadeOut(int pixel, int r, int g, int b, double duration);
+void initAnimation();
 
 ////////////////////////////////////
 //   DEVICE-SPECIFIC LED SERVICES //
@@ -23,6 +31,9 @@ SoftwareSerial mhzSerial(MHZ19B_TX_PIN, MHZ19B_RX_PIN);
 
 // Declare MHZ19B object
 ErriezMHZ19B mhz19b(&mhzSerial);
+
+// Create Neopixel object
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperature sensor
 
@@ -43,9 +54,19 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		mhzSerial.begin(9600);
 
 		detect_mhz();
+
+		pixels.begin();
+		pixels.setBrightness(50);
+		pixels.show();
 	}
 
 	void loop() {
+
+		if (playInitAnim) {
+			Serial.println("Init animation");
+			initAnimation();
+			playInitAnim = false;
+		}
 
 		if (co2StatusActive->timeVal() > 5 * 1000 && needToWarmUp) {
 			// Serial.println("Need to warm up");
@@ -159,20 +180,62 @@ void detect_mhz() {
 	Serial.println("Sensor detected!");
 }
 
-// void warm_mhz() {
-// 	// Print a value each 5 seconds
-// 	// during 3-minute warmup (for debug)
-// 	Serial.println("Warming up");
-// 	if (mhz19b.isWarmingUp()) {
-// 		// neopixelAutoBrightness();
-// 		// fadeIn(0, 255, 165, 0, 100, 2500);
-// 		// fadeOut(0, 255, 165, 0, 2500);
-// 		tick = tick + 5;
-// 		Serial.println((String)tick + " ");
-// 		co2StatusActive->setVal(false);
-// 	} else {
-// 		needToWarmUp = false;
-// 		co2StatusActive->setVal(true);
-// 	}
-// 	// Serial.println("Warmed up!");
-// }
+// Fade in to pre-defined color
+void fadeIn(int pixel, int r, int g, int b, double duration) {
+	int brightness = BRIGHTNESS_DEFAULT;
+	// int brightness = neopixelAutoBrightness();
+	for (int i = 0; i < brightness; i++) {
+		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
+		pixels.setBrightness(i);
+		pixels.show();
+		delay(duration / brightness);
+	}
+}
+
+// Fade in to pre-defined color
+void fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration) {
+	int brightness = brightnessOverride;
+	for (int i = 0; i < brightness; i++) {
+		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
+		pixels.setBrightness(i);
+		pixels.show();
+		delay(duration / brightness);
+	}
+}
+
+// Fade out from pre-defined color
+void fadeOut(int pixel, int r, int g, int b, double duration) {
+	int currentBrightness = pixels.getBrightness();
+	for (int i = 0; i < currentBrightness; i++) {
+		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
+		pixels.setBrightness(currentBrightness - i);
+		pixels.show();
+		delay(duration / currentBrightness);
+	}
+	pixels.setPixelColor(pixel, pixels.Color(0, 0, 0));
+	pixels.show();
+}
+
+void initAnimation() {
+	int duration   = 1000;
+	int brightness = 100;
+	// green
+	fadeIn(0, 0, 255, 0, brightness, duration);
+	fadeOut(0, 0, 255, 0, duration);
+
+	// yellow
+	fadeIn(0, 255, 165, 0, brightness, duration);
+	fadeOut(0, 255, 165, 0, duration);
+
+	// red
+	fadeIn(0, 255, 0, 0, brightness, duration);
+	fadeOut(0, 255, 0, 0, duration);
+
+	// yellow
+	fadeIn(0, 255, 165, 0, brightness, duration);
+	fadeOut(0, 255, 165, 0, duration);
+
+	// green
+	fadeIn(0, 0, 255, 0, brightness, duration);
+	fadeOut(0, 0, 255, 0, duration);
+}

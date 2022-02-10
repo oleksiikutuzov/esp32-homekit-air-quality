@@ -55,6 +55,7 @@
 #include "DEV_Sensors.h"
 #include <ErriezMHZ19B.h>
 #include <SoftwareSerial.h>
+#include <Adafruit_NeoPixel.h>
 
 void setup() {
 
