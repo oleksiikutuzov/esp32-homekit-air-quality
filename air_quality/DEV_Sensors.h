@@ -2,6 +2,8 @@
 #include <SoftwareSerial.h>
 #include <ErriezMHZ19B.h>
 #include <Adafruit_NeoPixel.h>
+#include "SerialCom.h"
+#include "Types.h"
 
 #define MHZ19B_TX_PIN		19
 #define MHZ19B_RX_PIN		18
@@ -12,9 +14,11 @@
 #define BRIGHTNESS_DEFAULT	30	 // Default (dimmed) brightness
 #define BRIGHTNESS_MAX		100	 // maximum brightness of CO2 indicator led
 
-bool needToWarmUp = true;
-bool playInitAnim = true;
-int	 tick		  = 0;
+bool				  needToWarmUp	= true;
+bool				  playInitAnim	= true;
+int					  tick			= 0;
+bool				  airQualityAct = false;
+particleSensorState_t state;
 
 // Declare functions
 void detect_mhz();
@@ -54,6 +58,8 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		mhzSerial.begin(9600);
 
 		detect_mhz();
+
+		// TODO Add autocalibration
 
 		pixels.begin();
 		pixels.setBrightness(50);
@@ -156,21 +162,53 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 	SpanCharacteristic *airQuality; // reference to the Air Quality Characteristic, which is an integer from 0 to 5
 	SpanCharacteristic *pm25;
+	SpanCharacteristic *airQualityActive;
 
 	DEV_AirQualitySensor() : Service::AirQualitySensor() { // constructor() method
 
-		airQuality = new Characteristic::AirQuality(1); // instantiate the Air Quality Characteristic and set initial value to 1
-		pm25	   = new Characteristic::PM25Density(0);
+		airQuality		 = new Characteristic::AirQuality(1); // instantiate the Air Quality Characteristic and set initial value to 1
+		pm25			 = new Characteristic::PM25Density(0);
+		airQualityActive = new Characteristic::StatusActive(false);
 
 		Serial.print("Configuring Air Quality Sensor"); // initialization message
 		Serial.print("\n");
+
+		SerialCom::setup();
 
 	} // end constructor
 
 	void loop() {
 
-		if (airQuality->timeVal() > 5000)						// modify the Air Quality Characteristic every 5 seconds
-			airQuality->setVal((airQuality->getVal() + 1) % 6); // simulate a change in Air Quality by incrementing the current value by one, and keeping in range 0-5
+		if (pm25->timeVal() > INTERVAL * 1000) { // modify the Air Quality Characteristic every 5 seconds
+
+			SerialCom::handleUart(state);
+
+			if (state.valid) {
+
+				if (!airQualityAct) {
+					airQualityActive->setVal(true);
+					airQualityAct = true;
+				}
+
+				pm25->setVal(state.avgPM25);
+
+				int airQualityVal = 0;
+
+				// Set Air Quality level based on PM2.5 value
+				if (state.avgPM25 >= 150) {
+					airQualityVal = 5;
+				} else if (state.avgPM25 >= 55) {
+					airQualityVal = 4;
+				} else if (state.avgPM25 >= 35) {
+					airQualityVal = 3;
+				} else if (state.avgPM25 >= 12) {
+					airQualityVal = 2;
+				} else if (state.avgPM25 >= 0) {
+					airQualityVal = 1;
+				}
+				airQuality->setVal(airQualityVal);
+			}
+		}
 
 	} // loop
 };

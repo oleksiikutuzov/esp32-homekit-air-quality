@@ -33,7 +33,7 @@
 			  ║│ |            |				║
 			  ╠═════════════════════════════╣
 		  +++ ║GND         				 GND║ +++
-		  +++ ║3.3V      			    IO23║
+		  +++ ║3.3V      			    IO23║ USED_FOR_NOTHING
 			  ║     			    	IO22║
 			  ║IO36    				     IO1║ TX
 			  ║IO39   				     IO3║ RX
@@ -41,10 +41,10 @@
 			  ║IO35     			    	║ NC
 			  ║IO32     				IO19║ MHZ TX
 			  ║IO33     			    IO18║ MHZ RX
-			  ║IO25      			     IO5║
+ LIGHT_SENSOR ║IO25      			     IO5║
 			  ║IO26     			    IO17║
 			  ║IO27     			    IO16║
-			  ║IO14    				     IO4║
+ VINDRIKTNING ║IO14    				     IO4║
 			  ║IO12      		  	     IO0║ +++, BUTTON
 			  ╚═════════════════════════════╝
 
@@ -56,6 +56,8 @@
 #include <ErriezMHZ19B.h>
 #include <SoftwareSerial.h>
 #include <Adafruit_NeoPixel.h>
+#include "SerialCom.h"
+#include "Types.h"
 
 void setup() {
 
