@@ -59,7 +59,8 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 		detect_mhz();
 
-		// TODO Add autocalibration
+		// Enable auto-calibration
+		mhz19b.setAutoCalibration(true);
 
 		pixels.begin();
 		pixels.setBrightness(50);
