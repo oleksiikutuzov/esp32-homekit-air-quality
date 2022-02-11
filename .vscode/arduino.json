@@ -1,0 +1,8 @@
+{
+    "configuration": "FlashFreq=80,PartitionScheme=default,CPUFreq=240,UploadSpeed=921600",
+    "board": "esp32:esp32:lolin32",
+    "port": "/dev/cu.usbserial-01DFA3CE",
+    "sketch": "air_quality/air_quality.ino",
+    "output": "build",
+    "postbuild": "cp ./build/air_quality.ino.bin ./firmware.bin"
+}
