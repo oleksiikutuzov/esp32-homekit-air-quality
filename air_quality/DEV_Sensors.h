@@ -143,7 +143,9 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 			}
 		}
 
-		// TODO reset peak value
+		if (co2Level->timeVal() > 12 * 60 * 60 * 1000) {
+			co2PeakLevel->setVal(400);
+		}
 	}
 };
 
