@@ -58,10 +58,21 @@
 #include <Adafruit_NeoPixel.h>
 #include "SerialCom.h"
 #include "Types.h"
+#include <WebServer.h>
+
+WebServer webServer(80);
+
+DEV_CO2Sensor		  *CO2; // GLOBAL POINTER TO STORE SERVICE
+DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
 
 void setup() {
 
 	Serial.begin(115200);
+
+	homeSpan.setLogLevel(1);
+	homeSpan.setPortNum(1201);			// change port number for HomeSpan so we can use port 80 for the Web Server
+	homeSpan.setMaxConnections(6);		// reduce max connection to 5 (default is 8) since WebServer and a connecting client will need 2
+	homeSpan.setWifiCallback(setupWeb); // need to start Web Server after WiFi is established
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Bridge");
 
@@ -72,14 +83,49 @@ void setup() {
 
 	new SpanAccessory();
 	new DEV_Identify("Carbon Dioxide Sensor", "HomeSpan", "123-ABC", "Sensor", "0.9", 0);
-	new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
+	CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
 
 	new SpanAccessory();
 	new DEV_Identify("Air Quality", "HomeSpan", "123-ABC", "Sensor", "0.9", 0);
-	new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
+	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 }
 
 void loop() {
 
 	homeSpan.poll();
+	webServer.handleClient(); // need to process webServer once each loop
 }
+
+void setupWeb() {
+	Serial.print("Starting Light Server Hub...\n\n");
+	webServer.begin();
+
+	// Create web routines inline
+
+	webServer.on("/metrics", []() {
+		double airQuality = AQI->pm25->getVal();
+		double co2		  = CO2->co2Level->getVal();
+		if (co2 > 399) { // exclude when it is still warming up
+			// double lightness		= neopixelAutoBrightness();
+			String airQualityMetric = "# HELP air_quality PM2.5 Density\nair_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
+			String CO2Metric		= "# HELP co2 Carbon Dioxide\ncarbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
+			// String uptimeMetric		= "# HELP uptime Sensor uptime\nuptime{device=\"air_sensor\",location=\"home\"} " + String(uptime);
+			// String lightnessMetric	= "# HELP lightness Lightness\nlightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
+			Serial.println(airQualityMetric);
+			Serial.println(CO2Metric);
+			// Serial.println(uptimeMetric);
+			// Serial.println(lightnessMetric);
+
+			webServer.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric);
+		}
+	});
+
+	webServer.on("/reboot", []() {
+		String content = "<html><body>Rebooting!  Will return to configuration page in 10 seconds.<br><br>";
+		content += "<meta http-equiv = \"refresh\" content = \"10; url = /\" />";
+		webServer.send(200, "text/html", content);
+
+		ESP.restart();
+	});
+
+} // setupWeb
