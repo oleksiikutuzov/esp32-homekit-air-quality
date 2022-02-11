@@ -5,14 +5,16 @@
 #include "SerialCom.h"
 #include "Types.h"
 
-#define MHZ19B_TX_PIN		19
-#define MHZ19B_RX_PIN		18
-#define INTERVAL			5	 // in seconds
-#define HOMEKIT_CO2_TRIGGER 1350 // co2 level, at which HomeKit alarm will be triggered
-#define NEOPIXEL_PIN		16	 // Pin to which NeoPixel strip is connected
-#define NUMPIXELS			1	 // Number of pixels
-#define BRIGHTNESS_DEFAULT	30	 // Default (dimmed) brightness
-#define BRIGHTNESS_MAX		100	 // maximum brightness of CO2 indicator led
+#define MHZ19B_TX_PIN		 19
+#define MHZ19B_RX_PIN		 18
+#define INTERVAL			 5	  // in seconds
+#define HOMEKIT_CO2_TRIGGER	 1350 // co2 level, at which HomeKit alarm will be triggered
+#define NEOPIXEL_PIN		 16	  // Pin to which NeoPixel strip is connected
+#define NUMPIXELS			 1	  // Number of pixels
+#define BRIGHTNESS_DEFAULT	 10	  // Default (dimmed) brightness
+#define BRIGHTNESS_MAX		 150  // maximum brightness of CO2 indicator led
+#define BRIGHTNESS_THRESHOLD 500  // Threshold value of dimmed brightness
+#define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
 
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
@@ -25,6 +27,7 @@ void detect_mhz();
 void fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
 void fadeOut(int pixel, int r, int g, int b, double duration);
 void initAnimation();
+int	 neopixelAutoBrightness();
 
 ////////////////////////////////////
 //   DEVICE-SPECIFIC LED SERVICES //
@@ -81,7 +84,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 			if (mhz19b.isWarmingUp()) {
 				Serial.println("Warming up");
 				pixels.setPixelColor(0, pixels.Color(255, 165, 0));
-				pixels.setBrightness(BRIGHTNESS_DEFAULT);
+				pixels.setBrightness(neopixelAutoBrightness());
 				pixels.show();
 				delay(2.5 * 1000);
 				pixels.setPixelColor(0, pixels.Color(0, 0, 0));
@@ -118,20 +121,20 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 				if (co2_value >= 1000) {
 					LOG1("Red color\n");
 					pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // red color
-					pixels.setBrightness(BRIGHTNESS_DEFAULT);
-					// pixels.setBrightness(neopixelAutoBrightness());
+					// pixels.setBrightness(BRIGHTNESS_DEFAULT);
+					pixels.setBrightness(neopixelAutoBrightness());
 					pixels.show();
 				} else if (co2_value >= 800) {
 					LOG1("Yellow color\n");
 					pixels.setPixelColor(0, pixels.Color(255, 127, 0)); // orange color
-					pixels.setBrightness(BRIGHTNESS_DEFAULT);
-					// pixels.setBrightness(neopixelAutoBrightness());
+					// pixels.setBrightness(BRIGHTNESS_DEFAULT);
+					pixels.setBrightness(neopixelAutoBrightness());
 					pixels.show();
 				} else if (co2_value >= 400) {
 					LOG1("Green color\n");
 					pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // green color
-					pixels.setBrightness(BRIGHTNESS_DEFAULT);
-					// pixels.setBrightness(neopixelAutoBrightness());
+					// pixels.setBrightness(BRIGHTNESS_DEFAULT);
+					pixels.setBrightness(neopixelAutoBrightness());
 					pixels.show();
 				}
 
@@ -229,8 +232,7 @@ void detect_mhz() {
 
 // Fade in to pre-defined color
 void fadeIn(int pixel, int r, int g, int b, double duration) {
-	int brightness = BRIGHTNESS_DEFAULT;
-	// int brightness = neopixelAutoBrightness();
+	int brightness = neopixelAutoBrightness();
 	for (int i = 0; i < brightness; i++) {
 		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
 		pixels.setBrightness(i);
@@ -285,4 +287,17 @@ void initAnimation() {
 	// green
 	fadeIn(0, 0, 255, 0, brightness, duration);
 	fadeOut(0, 0, 255, 0, duration);
+}
+
+// Function for setting brightness based on light sensor values
+int neopixelAutoBrightness() {
+	double sensorValue = analogRead(ANALOG_PIN);
+	// print the readings in the Serial Monitor
+	Serial.println(sensorValue);
+
+	if (sensorValue < BRIGHTNESS_THRESHOLD) {
+		return BRIGHTNESS_DEFAULT;
+	} else {
+		return BRIGHTNESS_MAX;
+	}
 }
