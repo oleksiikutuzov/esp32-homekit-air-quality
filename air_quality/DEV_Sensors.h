@@ -9,7 +9,7 @@
 #define HOMEKIT_CO2_TRIGGER 1350 // co2 level, at which HomeKit alarm will be triggered
 #define NEOPIXEL_PIN		16	 // Pin to which NeoPixel strip is connected
 #define NUMPIXELS			1	 // Number of pixels
-#define BRIGHTNESS_DEFAULT	10	 // Default (dimmed) brightness
+#define BRIGHTNESS_DEFAULT	30	 // Default (dimmed) brightness
 #define BRIGHTNESS_MAX		100	 // maximum brightness of CO2 indicator led
 
 bool needToWarmUp = true;
@@ -73,9 +73,12 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 			if (mhz19b.isWarmingUp()) {
 				Serial.println("Warming up");
-				// neopixelAutoBrightness();
-				// fadeIn(0, 255, 165, 0, 100, 2500);
-				// fadeOut(0, 255, 165, 0, 2500);
+				pixels.setPixelColor(0, pixels.Color(255, 165, 0));
+				pixels.setBrightness(BRIGHTNESS_DEFAULT);
+				pixels.show();
+				delay(2.5 * 1000);
+				pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+				pixels.show();
 				tick = tick + 5;
 				Serial.println((String)tick + " ");
 				co2StatusActive->setVal(false);
@@ -108,19 +111,22 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 				// 1000+        -> red
 				if (co2_value >= 1000) {
 					LOG1("Red color\n");
-					// pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // red color
+					pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // red color
+					pixels.setBrightness(BRIGHTNESS_DEFAULT);
 					// pixels.setBrightness(neopixelAutoBrightness());
-					// pixels.show();
+					pixels.show();
 				} else if (co2_value >= 800) {
 					LOG1("Yellow color\n");
-					// pixels.setPixelColor(0, pixels.Color(255, 127, 0)); // orange color
+					pixels.setPixelColor(0, pixels.Color(255, 127, 0)); // orange color
+					pixels.setBrightness(BRIGHTNESS_DEFAULT);
 					// pixels.setBrightness(neopixelAutoBrightness());
-					// pixels.show();
+					pixels.show();
 				} else if (co2_value >= 400) {
 					LOG1("Green color\n");
-					// pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // green color
+					pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // green color
+					pixels.setBrightness(BRIGHTNESS_DEFAULT);
 					// pixels.setBrightness(neopixelAutoBrightness());
-					// pixels.show();
+					pixels.show();
 				}
 
 				// Update peak value
@@ -173,9 +179,10 @@ void detect_mhz() {
 	// Detect sensor
 	Serial.println("Detecting MH-Z19B");
 	while (!mhz19b.detect()) {
-		// neopixelAutoBrightness();
-		// fadeIn(0, 255, 0, 0, 100, 1000);
-		// fadeOut(0, 255, 0, 0, 1000);
+		pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+		pixels.setBrightness(BRIGHTNESS_DEFAULT);
+		delay(2.5 * 1000);
+		pixels.setPixelColor(0, pixels.Color(0, 0, 0));
 	};
 	Serial.println("Sensor detected!");
 }
@@ -218,7 +225,7 @@ void fadeOut(int pixel, int r, int g, int b, double duration) {
 
 void initAnimation() {
 	int duration   = 1000;
-	int brightness = 100;
+	int brightness = BRIGHTNESS_DEFAULT;
 	// green
 	fadeIn(0, 0, 255, 0, brightness, duration);
 	fadeOut(0, 0, 255, 0, duration);
