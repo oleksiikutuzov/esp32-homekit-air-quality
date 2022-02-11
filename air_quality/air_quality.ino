@@ -107,16 +107,20 @@ void setupWeb() {
 		double co2		  = CO2->co2Level->getVal();
 		if (co2 > 399) { // exclude when it is still warming up
 			// double lightness		= neopixelAutoBrightness();
+			double uptime			= esp_timer_get_time() / (6 * 10e6);
+			double heap				= esp_get_free_heap_size();
 			String airQualityMetric = "# HELP air_quality PM2.5 Density\nair_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
 			String CO2Metric		= "# HELP co2 Carbon Dioxide\ncarbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
-			// String uptimeMetric		= "# HELP uptime Sensor uptime\nuptime{device=\"air_sensor\",location=\"home\"} " + String(uptime);
+			String uptimeMetric		= "# HELP uptime Sensor uptime\nuptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
+			String heapMetric		= "# HELP heap Available heap memory\nheap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
 			// String lightnessMetric	= "# HELP lightness Lightness\nlightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
 			Serial.println(airQualityMetric);
 			Serial.println(CO2Metric);
-			// Serial.println(uptimeMetric);
+			Serial.println(uptimeMetric);
+			Serial.println(heapMetric);
 			// Serial.println(lightnessMetric);
 
-			webServer.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric);
+			webServer.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric);
 		}
 	});
 

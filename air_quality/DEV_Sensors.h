@@ -107,7 +107,6 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 			if (co2_value > 0) {
 
 				co2Level->setVal(co2_value); // set the new co value; this generates an Event Notification and also resets the elapsed time
-
 				LOG1("Carbon Dioxide Update: ");
 				LOG1((int)co2Level);
 				LOG1("\n");
