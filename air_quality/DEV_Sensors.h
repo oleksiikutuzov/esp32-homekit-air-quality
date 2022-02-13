@@ -52,7 +52,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 	DEV_CO2Sensor() : Service::CarbonDioxideSensor() { // constructor() method
 
 		co2Detected		= new Characteristic::CarbonDioxideDetected(false);
-		co2Level		= new Characteristic::CarbonDioxideLevel(399);
+		co2Level		= new Characteristic::CarbonDioxideLevel(400);
 		co2PeakLevel	= new Characteristic::CarbonDioxidePeakLevel(400);
 		co2StatusActive = new Characteristic::StatusActive(false);
 
