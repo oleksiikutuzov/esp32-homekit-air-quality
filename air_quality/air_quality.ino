@@ -78,7 +78,7 @@ void setup() {
 	homeSpan.setControlPin(BUTTON_PIN); // Set button pin
 	homeSpan.enableAutoStartAP();
 
-	homeSpan.begin(Category::Bridges, "HomeSpan Bridge");
+	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
 	new SpanAccessory();
 	new DEV_Identify("Bridge #1", "HomeSpan", "123-ABC", "HS Bridge", "0.9", 3);
@@ -90,7 +90,7 @@ void setup() {
 	CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
 
 	new SpanAccessory();
-	new DEV_Identify("Air Quality", "HomeSpan", "123-ABC", "Sensor", "0.9", 0);
+	new DEV_Identify("Air Quality Sensor", "HomeSpan", "123-ABC", "Sensor", "0.9", 0);
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 }
 
@@ -101,7 +101,7 @@ void loop() {
 }
 
 void setupWeb() {
-	Serial.print("Starting Light Server Hub...\n\n");
+	Serial.print("Starting Air Quality Sensor Server Hub...\n\n");
 	webServer.begin();
 
 	// Create web routines inline
