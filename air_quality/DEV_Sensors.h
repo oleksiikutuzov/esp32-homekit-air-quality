@@ -107,12 +107,14 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 				co2_value = mhz19b.readCO2();
 			}
 
-			if (co2_value > 0) {
+			if (co2_value >= 400) {
 
 				co2Level->setVal(co2_value); // set the new co value; this generates an Event Notification and also resets the elapsed time
 				LOG1("Carbon Dioxide Update: ");
 				LOG1((int)co2Level);
 				LOG1("\n");
+
+				// TODO smoothing
 
 				// Set color indicator
 				// 400 - 800    -> green

@@ -27,26 +27,26 @@
 
 /*
 			 ESP-WROOM-32 Utilized pins
-			  ╔═════════════════════════════╗
-			  ║┌─┬─┐  ┌──┐  ┌─┐				║
-			  ║│ | └──┘  └──┘ |				║
-			  ║│ |            |				║
-			  ╠═════════════════════════════╣
-		  +++ ║GND         				 GND║ +++
-		  +++ ║3.3V      			    IO23║ USED_FOR_NOTHING
-			  ║     			    	IO22║
-			  ║IO36    				     IO1║ TX
-			  ║IO39   				     IO3║ RX
-			  ║IO34      	  		    IO21║
-			  ║IO35     			    	║ NC
-			  ║IO32     				IO19║ MHZ TX
-			  ║IO33     			    IO18║ MHZ RX
- LIGHT_SENSOR ║IO25      			     IO5║
-			  ║IO26     			    IO17║
-			  ║IO27     			    IO16║
- VINDRIKTNING ║IO14    				     IO4║
-			  ║IO12      		  	     IO0║ +++, BUTTON
-			  ╚═════════════════════════════╝
+				╔═════════════════════════════╗
+				║┌─┬─┐  ┌──┐  ┌─┐			  ║
+				║│ | └──┘  └──┘ |			  ║
+				║│ |            |			  ║
+				╠═════════════════════════════╣
+			+++ ║GND         			   GND║ +++
+			+++ ║3.3V      			   	  IO23║ USED_FOR_NOTHING
+				║     			    	  IO22║
+				║IO36    				   IO1║ TX
+				║IO39   				   IO3║ RX
+		 BUTTON ║IO34      	  		      IO21║
+				║IO35     			    	  ║ NC
+		RED_LED ║IO32     				  IO19║ MHZ TX
+				║IO33     			      IO18║ MHZ RX
+   LIGHT_SENSOR ║IO25      			       IO5║
+	 LED_YELLOW ║IO26     			      IO17║
+				║IO27     			      IO16║ NEOPIXEL
+   VINDRIKTNING ║IO14    				   IO4║
+				║IO12      		  	       IO0║ +++, BUTTON
+				╚═════════════════════════════╝
 
 */
 
@@ -105,7 +105,7 @@ void setupWeb() {
 	webServer.on("/metrics", []() {
 		double airQuality = AQI->pm25->getVal();
 		double co2		  = CO2->co2Level->getVal();
-		if (co2 > 399) { // exclude when it is still warming up
+		if (co2 >= 400) { // exclude when it is still warming up
 			// double lightness		= neopixelAutoBrightness();
 			double uptime			= esp_timer_get_time() / (6 * 10e6);
 			double heap				= esp_get_free_heap_size();
