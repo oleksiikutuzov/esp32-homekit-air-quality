@@ -7,7 +7,7 @@
 
 #define MHZ19B_TX_PIN		 19
 #define MHZ19B_RX_PIN		 18
-#define INTERVAL			 5	  // in seconds
+#define INTERVAL			 10	  // in seconds
 #define HOMEKIT_CO2_TRIGGER	 1350 // co2 level, at which HomeKit alarm will be triggered
 #define NEOPIXEL_PIN		 16	  // Pin to which NeoPixel strip is connected
 #define NUMPIXELS			 1	  // Number of pixels
