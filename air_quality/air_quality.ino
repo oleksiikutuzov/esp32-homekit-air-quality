@@ -60,6 +60,8 @@
 #include "Types.h"
 #include <WebServer.h>
 
+#define BUTTON_PIN 21
+
 WebServer webServer(80);
 
 DEV_CO2Sensor		  *CO2; // GLOBAL POINTER TO STORE SERVICE
@@ -73,6 +75,8 @@ void setup() {
 	homeSpan.setPortNum(1201);			// change port number for HomeSpan so we can use port 80 for the Web Server
 	homeSpan.setMaxConnections(6);		// reduce max connection to 5 (default is 8) since WebServer and a connecting client will need 2
 	homeSpan.setWifiCallback(setupWeb); // need to start Web Server after WiFi is established
+	homeSpan.setControlPin(BUTTON_PIN); // Set button pin
+	homeSpan.enableAutoStartAP();
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Bridge");
 
