@@ -15,12 +15,14 @@
 #define BRIGHTNESS_MAX		 150  // maximum brightness of CO2 indicator led
 #define BRIGHTNESS_THRESHOLD 500  // Threshold value of dimmed brightness
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
+#define NUM_PREV_VALUES		 10	  // Number of elements in the vector of previous values
 
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
 int					  tick			= 0;
 bool				  airQualityAct = false;
 particleSensorState_t state;
+std::vector<float>	  results(NUM_PREV_VALUES);
 
 // Declare functions
 void detect_mhz();
@@ -52,7 +54,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 	DEV_CO2Sensor() : Service::CarbonDioxideSensor() { // constructor() method
 
 		co2Detected		= new Characteristic::CarbonDioxideDetected(false);
-		co2Level		= new Characteristic::CarbonDioxideLevel(400);
+		co2Level		= new Characteristic::CarbonDioxideLevel(399);
 		co2PeakLevel	= new Characteristic::CarbonDioxidePeakLevel(400);
 		co2StatusActive = new Characteristic::StatusActive(false);
 
@@ -108,6 +110,21 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 			}
 
 			if (co2_value >= 400) {
+
+				results.push_back(co2_value);
+				results.erase(results.begin());
+
+				float sum	= 0;
+				int	  zeros = 0;
+				for (int i = 0; i < results.size(); i++) {
+					Serial.print(String(results.at(i)) + " ");
+					sum += results.at(i);
+					if (results.at(i) == 0) {
+						zeros++;
+					}
+				}
+				Serial.println("mean value: " + String(sum / (results.size() - zeros)));
+				co2_value = sum / (results.size() - zeros);
 
 				co2Level->setVal(co2_value); // set the new co value; this generates an Event Notification and also resets the elapsed time
 				LOG1("Carbon Dioxide Update: ");
