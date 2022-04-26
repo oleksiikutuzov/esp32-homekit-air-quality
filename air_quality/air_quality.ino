@@ -58,11 +58,14 @@
 #include <Adafruit_NeoPixel.h>
 #include "SerialCom.h"
 #include "Types.h"
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
 
-#define BUTTON_PIN 21
+#define BUTTON_PIN		21
+#define LED_STATUS_PIN	26
+#define LED_CONTROL_PIN 32
 
-WebServer webServer(80);
+AsyncWebServer server(80);
 
 DEV_CO2Sensor		  *CO2; // GLOBAL POINTER TO STORE SERVICE
 DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
@@ -72,10 +75,12 @@ void setup() {
 	Serial.begin(115200);
 
 	homeSpan.setLogLevel(1);
-	homeSpan.setPortNum(1201);			// change port number for HomeSpan so we can use port 80 for the Web Server
-	homeSpan.setMaxConnections(6);		// reduce max connection to 5 (default is 8) since WebServer and a connecting client will need 2
-	homeSpan.setWifiCallback(setupWeb); // need to start Web Server after WiFi is established
-	homeSpan.setControlPin(BUTTON_PIN); // Set button pin
+	homeSpan.setPortNum(1201);				 // change port number for HomeSpan so we can use port 80 for the Web Server
+	homeSpan.reserveSocketConnections(6);	 // reduce max connection to 5 (default is 8) since WebServer and a connecting client will need 2
+	homeSpan.setWifiCallback(setupWeb);		 // need to start Web Server after WiFi is established
+	homeSpan.setControlPin(BUTTON_PIN);		 // Set button pin
+	homeSpan.setStatusPin(LED_STATUS_PIN);	 // Set status led pin
+	homeSpan.setControlPin(LED_CONTROL_PIN); // Set control led pin
 	homeSpan.enableAutoStartAP();
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
@@ -97,16 +102,12 @@ void setup() {
 void loop() {
 
 	homeSpan.poll();
-	webServer.handleClient(); // need to process webServer once each loop
 }
 
 void setupWeb() {
 	Serial.print("Starting Air Quality Sensor Server Hub...\n\n");
-	webServer.begin();
 
-	// Create web routines inline
-
-	webServer.on("/metrics", []() {
+	server.on("/metrics", HTTP_GET, [](AsyncWebServerRequest *request) {
 		double airQuality = AQI->pm25->getVal();
 		double co2		  = CO2->co2Level->getVal();
 		if (co2 >= 400) { // exclude when it is still warming up
@@ -122,18 +123,19 @@ void setupWeb() {
 			Serial.println(CO2Metric);
 			Serial.println(uptimeMetric);
 			Serial.println(heapMetric);
-			// Serial.println(lightnessMetric);
-
-			webServer.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric);
+			request->send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric);
 		}
 	});
 
-	webServer.on("/reboot", []() {
+	server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request) {
 		String content = "<html><body>Rebooting!  Will return to configuration page in 10 seconds.<br><br>";
 		content += "<meta http-equiv = \"refresh\" content = \"10; url = /\" />";
-		webServer.send(200, "text/html", content);
+		request->send(200, "text/html", content);
 
 		ESP.restart();
 	});
 
+	AsyncElegantOTA.begin(&server); // Start AsyncElegantOTA
+	server.begin();
+	Serial.println("HTTP server started");
 } // setupWeb
