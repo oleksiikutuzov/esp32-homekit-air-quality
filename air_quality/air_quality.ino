@@ -74,8 +74,7 @@ void setup() {
 	Serial.begin(115200);
 
 	homeSpan.setLogLevel(1);
-	homeSpan.setPortNum(81); // change port number for HomeSpan so we can use port 80 for the Web Server
-	// homeSpan.reserveSocketConnections(6);  // reduce max connection to 5 (default is 8) since WebServer and a connecting client will need 2
+	homeSpan.setPortNum(81);			   // change port number for HomeSpan so we can use port 80 for the Web Server
 	homeSpan.setStatusAutoOff(10);		   // turn off status led after 10 seconds of inactivity
 	homeSpan.setWifiCallback(setupWeb);	   // need to start Web Server after WiFi is established
 	homeSpan.setControlPin(BUTTON_PIN);	   // Set button pin
