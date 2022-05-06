@@ -37,7 +37,7 @@
 				║     			    	  IO22║
 				║IO36    				   IO1║ TX
 				║IO39   				   IO3║ RX
-		 BUTTON ║IO34      	  		      IO21║
+				║IO34      	  		      IO21║
 				║IO35     			    	  ║ NC
 		RED_LED ║IO32     				  IO19║ MHZ TX
 				║IO33     			      IO18║ MHZ RX
@@ -45,7 +45,7 @@
 	 LED_YELLOW ║IO26     			      IO17║
 				║IO27     			      IO16║ NEOPIXEL
    VINDRIKTNING ║IO14    				   IO4║
-				║IO12      		  	       IO0║ +++, BUTTON
+				║IO12      		  	       IO0║ +++, BUTTONS
 				╚═════════════════════════════╝
 
 */
