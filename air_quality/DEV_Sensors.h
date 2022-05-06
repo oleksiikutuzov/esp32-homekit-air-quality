@@ -4,6 +4,7 @@
 #include <Adafruit_NeoPixel.h>
 #include "SerialCom.h"
 #include "Types.h"
+#include <Smoothed.h>
 
 #define MHZ19B_TX_PIN		 19
 #define MHZ19B_RX_PIN		 18
@@ -13,16 +14,16 @@
 #define NUMPIXELS			 1	  // Number of pixels
 #define BRIGHTNESS_DEFAULT	 10	  // Default (dimmed) brightness
 #define BRIGHTNESS_MAX		 150  // maximum brightness of CO2 indicator led
-#define BRIGHTNESS_THRESHOLD 500  // Threshold value of dimmed brightness
+#define BRIGHTNESS_THRESHOLD 500  // TODO calibrate Threshold value of dimmed brightness
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
-#define NUM_PREV_VALUES		 10	  // Number of elements in the vector of previous values
+#define SMOOTHING_COEFF		 10	  // Number of elements in the vector of previous values
 
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
 int					  tick			= 0;
 bool				  airQualityAct = false;
 particleSensorState_t state;
-std::vector<float>	  results(NUM_PREV_VALUES);
+Smoothed<float>		  mySensor;
 
 // Declare functions
 void detect_mhz();
@@ -70,6 +71,8 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		pixels.begin();
 		pixels.setBrightness(50);
 		pixels.show();
+
+		mySensor.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
 	}
 
 	void loop() {
@@ -111,27 +114,18 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 			if (co2_value >= 400) {
 
-				results.push_back(co2_value);
-				results.erase(results.begin());
+				// Read a sensor value
+				// print co2 value
+				LOG1("CO2: ");
+				LOG1(co2_value);
+				LOG1(" ppm\n");
 
-				float sum	= 0;
-				int	  zeros = 0;
-				for (int i = 0; i < results.size(); i++) {
-					Serial.print(String(results.at(i)) + " ");
-					sum += results.at(i);
-					if (results.at(i) == 0) {
-						zeros++;
-					}
-				}
-				Serial.println("mean value: " + String(sum / (results.size() - zeros)));
-				co2_value = sum / (results.size() - zeros);
+				mySensor.add(co2_value);
 
-				co2Level->setVal(co2_value); // set the new co value; this generates an Event Notification and also resets the elapsed time
+				co2Level->setVal(mySensor.get()); // set the new co value; this generates an Event Notification and also resets the elapsed time
 				LOG1("Carbon Dioxide Update: ");
-				LOG1((int)co2Level);
+				LOG1(co2Level->getVal());
 				LOG1("\n");
-
-				// TODO smoothing
 
 				// Set color indicator
 				// 400 - 800    -> green
