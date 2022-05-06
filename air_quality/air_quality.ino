@@ -61,7 +61,7 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 
-#define BUTTON_PIN	   21
+#define BUTTON_PIN	   0
 #define LED_STATUS_PIN 26
 
 AsyncWebServer server(80);
@@ -73,13 +73,13 @@ void setup() {
 
 	Serial.begin(115200);
 
-	homeSpan.setLogLevel(1);
+	homeSpan.setControlPin(BUTTON_PIN);	   // Set button pin
+	homeSpan.setStatusPin(LED_STATUS_PIN); // Set status led pin
+	homeSpan.setLogLevel(0);			   // set log level
 	homeSpan.setPortNum(81);			   // change port number for HomeSpan so we can use port 80 for the Web Server
 	homeSpan.setStatusAutoOff(10);		   // turn off status led after 10 seconds of inactivity
 	homeSpan.setWifiCallback(setupWeb);	   // need to start Web Server after WiFi is established
-	homeSpan.setControlPin(BUTTON_PIN);	   // Set button pin
-	homeSpan.setStatusPin(LED_STATUS_PIN); // Set status led pin
-	homeSpan.enableAutoStartAP();
+	// homeSpan.enableAutoStartAP();
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
