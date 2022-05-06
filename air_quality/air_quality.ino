@@ -51,7 +51,6 @@
 */
 
 #include <HomeSpan.h>
-#include "DEV_Identify.h"
 #include "DEV_Sensors.h"
 #include <ErriezMHZ19B.h>
 #include <SoftwareSerial.h>
@@ -86,6 +85,7 @@ void setup() {
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
+	new Characteristic::FirmwareRevision("1.0");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
