@@ -44,6 +44,13 @@ jobs:
           ref: master
           path: CustomAdafruit_NeoPixel
 
+      - name: Checkout Smoothed library
+        uses: actions/checkout@v2
+        with:
+          repository: MattFryer/Smoothed
+          ref: master
+          path: CustomSmoothed
+
       - name: "Compile sketch"
         uses: ArminJo/arduino-test-compile@v3
         with:
