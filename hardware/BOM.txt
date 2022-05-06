@@ -1,0 +1,19 @@
+Part  Value                  Device                   Package          Description                                                                 
+C1    10uF                   C_CHIP-0603(1608-METRIC) CAPC1608X85      Capacitor - Generic                                                         
+C2    10uF                   C_CHIP-0603(1608-METRIC) CAPC1608X85      Capacitor - Generic                                                         
+D2    RED                    LED-RED0603              LED-0603         Red SMD LED                                                                 
+FLASH SKRPACE010             SKRPACE010               SW_SKRPACE010    Switch Tactile N.O. SPST Button J-Bend 0.05A 16VDC 2.55N SMD Automotive T/R 
+J2    MH-Z19-CO2-NDIR-SENSOR MH-Z19-CO2-NDIR-SENSOR   MH-Z19           MH-Z19 - CO2 NDIR SENSOR                                                    
+J3    F-1X04-SIP-100-40      F-1X04-SIP-100-40        SIP-100-04-40    FEMALE HEADER                                                               
+R1    12K                    R_CHIP-0603(1608-METRIC) RESC1608X60      Resistor Fixed - Generic                                                    
+R2    3K                     R_CHIP-0603(1608-METRIC) RESC1608X60      Resistor Fixed - Generic                                                    
+R3    100                    R_CHIP-0603(1608-METRIC) RESC1608X60      Resistor Fixed - Generic                                                    
+R4    100                    R_CHIP-0603(1608-METRIC) RESC1608X60      Resistor Fixed - Generic                                                    
+R5    4.7k                   R_CHIP-0603(1608-METRIC) RESC1608X60      Resistor Fixed - Generic                                                    
+R7    4.7k                   R_CHIP-0603(1608-METRIC) RESC1608X60      Resistor Fixed - Generic                                                    
+RESET SKRPACE010             SKRPACE010               SW_SKRPACE010    https://a.aliexpress.com/_AWwm9c
+U$1   JST-GH-4PIN            JST-GH-4PIN              JST-GH-4PIN      https://a.aliexpress.com/_9IWSRs                                                                           
+U$2   JST-GH-3PIN            JST-GH-3PIN              JST-GH-3PIN      https://a.aliexpress.com/_9IWSRs                                                                           
+U$3   ESP32-WROOM            ESP32-WROOM              ESP32-WROOM                                                                                 
+U$4   MOMENTARY-SWITCH       MOMENTARY-SWITCH         SWITCH-MOMENTARY https://a.aliexpress.com/_AcqTm9 (6x6x6 mm)                                                                            
+U1    AP2112K-3.3TRG1        AP2112K-3.3TRG1          SOT95P285X140-5N AP2112 Series 0.6 A 3.3 V Fixed Output SMT LDO Linear Regulator - SOT23-5  
