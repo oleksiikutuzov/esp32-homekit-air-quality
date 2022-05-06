@@ -84,16 +84,19 @@ void setup() {
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
 	new SpanAccessory();
-	new DEV_Identify("Bridge #1", "HomeSpan", "123-ABC", "HS Bridge", "0.9", 3);
-	new Service::HAPProtocolInformation();
-	new Characteristic::Version("1.1.0");
+	new Service::AccessoryInformation();
+	new Characteristic::Identify();
 
 	new SpanAccessory();
-	new DEV_Identify("Carbon Dioxide Sensor", "HomeSpan", "123-ABC", "Sensor", "0.9", 0);
+	new Service::AccessoryInformation();
+	new Characteristic::Identify();
+	new Characteristic::Name("Carbon Dioxide Sensor");
 	CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
 
 	new SpanAccessory();
-	new DEV_Identify("Air Quality Sensor", "HomeSpan", "123-ABC", "Sensor", "0.9", 0);
+	new Service::AccessoryInformation();
+	new Characteristic::Identify();
+	new Characteristic::Name("Air Quality Sensor");
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 }
 
