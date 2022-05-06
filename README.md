@@ -106,10 +106,6 @@ A list of settings variables is in the sketch. You can adjust the values up to y
 
 The firmware creates a simple HTTP server to share the metrics to the Prometheus host server. The update interval is 10 seconds, the same as for the HomeKit data. Is available at the `http://[DEVICE IP]/metrics` default port is `80`.
 
-## ToDo
-
-* Upload hardware files
-
 ## References and sources
 
 - @kasik96 for HomeKit ESP8266 VINDRIKTNING custom firmware [GitHub link](https://github.com/kasik96/esp8266-vindriktning-particle-sensor-homekit)
