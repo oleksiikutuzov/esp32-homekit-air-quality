@@ -6,6 +6,8 @@
         "manu",
         "togther",
         "unsoliciated",
+        "VINDRIKTNING",
+        "Wemos",
         "WROOM"
     ],
     "editor.bracketPairColorization.enabled": true,
@@ -16,7 +18,36 @@
         "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
     ],
     "arduino.commandPath": "Contents/MacOS/Arduino",
-    "arduino.path": "/Applications/",
+    "arduino.path": "/Applications/Arduino.app",
     "editor.fontFamily": "Fira Code",
-    "editor.fontLigatures": true
+    "editor.fontLigatures": true,
+    "files.associations": {
+        "array": "cpp",
+        "associative_base": "cpp",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "iterator": "cpp",
+        "list": "cpp",
+        "serstream": "cpp",
+        "vector": "cpp",
+        "*.ipp": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "string_view": "cpp",
+        "regex": "cpp",
+        "valarray": "cpp"
+    },
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "Erase Flash",
+            "task": "Erase Flash",
+        }
+    ],
+    "cSpell.enableFiletypes": [
+        "!yaml"
+    ],
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-workflow.json": "file:///Users/user/git/esp32-air-quality/.github/workflows/build.yml"
+    }
 }

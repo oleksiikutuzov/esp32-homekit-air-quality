@@ -6,7 +6,7 @@
         {
             "label": "Erase Flash",
             "type": "shell",
-            "command": "esptool.py -p /dev/cu.usbserial-01DFA3CE erase_flash",
+            "command": "esptool.py -p /dev/cu.usbserial-1410 erase_flash",
             "problemMatcher": []
         }
     ]

@@ -1,7 +1,7 @@
 {
-    "configuration": "FlashFreq=80,PartitionScheme=default,CPUFreq=240,UploadSpeed=921600",
-    "board": "esp32:esp32:lolin32",
-    "port": "/dev/cu.usbserial-01DFA3CE",
+    "configuration": "PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=115200,LoopCore=1,EventsCore=1,DebugLevel=none",
+    "board": "esp32:esp32:esp32",
+    "port": "/dev/tty.usbserial-1410",
     "sketch": "air_quality/air_quality.ino",
     "output": "build",
     "postbuild": "cp ./build/air_quality.ino.bin ./firmware.bin"
