@@ -9,7 +9,7 @@ _As usual, don't expect any warranties. I am just a hobbyist, not a professional
 
 I also added the MH-Z19B CO2 Sensor, which fits into the second enclosure along with a custom PCB, which can be glued (taped) on top of the VINDRIKTNING device. It follows the existing design and should look nice (I hope). It also has an LED to show the current CO2 level.
 
-![render](./pictures/render.png)
+![render](./images/render.png)
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ Everything we need from the IKEA sensor is accessible via easy-to-solder test po
 
 To reach the original PCB from IKEA, we need to unscrew the four visible screws in the back of the enclosure.
 
-![board](./pictures/wires.jpg)
+![board](./images/wires.jpg)
 
 As you can see in this image, you'll need to solder wires to GND (black), 5V (red), and the Testpoint that is connected to TX of the
 Particle Sensor (lighter green). Additionally, you need to solder the cable to one of the pins of the microcontroller (darker green) to be able to read the values from the built-in light sensor. On my PCB I am using a JST-GH (1.25 mm) connector to connect all the wires from VINDRIKTNING. Make sure the cables from IKEA PCB have enough cross-section to carry the current, cause generic Chinese JST-GH connectors' cables are too thin. You can also connect them directly to GND, VIN (5V), and D2 (if you're using a Wemos D1 Mini). However, the light sensor is analog and outputs 0-5V. ADC pin of ESP32 can only read values in the range 0-1V, so you'll need to add a simple voltage divider to read out a voltage in the required range.
