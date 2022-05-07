@@ -3,21 +3,36 @@
     "configurations": [
         {
             "name": "Mac",
-            "compilerPath": "/Users/user/Library/Arduino15/packages/esp32/tools/xtensa-esp32-elf-gcc/gcc8_4_0-esp-2021r2/bin/xtensa-esp32-elf-size",
+            "compilerPath": "/Users/user/Library/Arduino15/packages/esp32/tools/xtensa-esp32-elf-gcc/gcc8_4_0-esp-2021r2-patch3/bin/xtensa-esp32-elf-g++",
             "compilerArgs": [],
-            "intelliSenseMode": "macos-gcc-x64",
+            "intelliSenseMode": "macos-gcc-x86",
             "includePath": [
                 "${workspaceFolder}/**",
                 "~/Documents/Arduino/libraries/**",
                 "~/Documents/Arduino/libraries/EspSoftwareSerial/**",
                 "~/Documents/Arduino/libraries/AsyncTCP/**",
                 "~/Documents/Arduino/libraries/ESPAsyncWebServer/**",
-                "~/Documents/Arduino/libraries/AsyncElegantOTA/**"
+                "~/Documents/Arduino/libraries/AsyncElegantOTA/**",
+                "~/esp/esp-idf/components/lwip/lwip/src/include/**",
+                "~/Documents/Arduino/libraries/HomeSpan/src/**"
             ],
             "forcedInclude": [],
             "cStandard": "c17",
-            "cppStandard": "c++14",
-            "defines": []
+            "cppStandard": "c++20",
+            "defines": [],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "~/Documents/Arduino/libraries/**",
+                    "~/Documents/Arduino/libraries/EspSoftwareSerial/**",
+                    "~/Documents/Arduino/libraries/AsyncTCP/**",
+                    "~/Documents/Arduino/libraries/ESPAsyncWebServer/**",
+                    "~/Documents/Arduino/libraries/AsyncElegantOTA/**",
+                    "~/esp/esp-idf/components/lwip/lwip/src/include/**",
+                    "~/Documents/Arduino/libraries/HomeSpan/src/**"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            }
         },
         {
             "name": "Arduino",
@@ -257,7 +272,7 @@
                 "ESP_PLATFORM",
                 "_POSIX_READER_WRITER_LOCKS",
                 "F_CPU=240000000L",
-                "ARDUINO=10819",
+                "ARDUINO=10607",
                 "ARDUINO_ESP32_DEV",
                 "ARDUINO_ARCH_ESP32",
                 "ARDUINO_BOARD=\"ESP32_DEV\"",

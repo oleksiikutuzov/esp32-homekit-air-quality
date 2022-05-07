@@ -1,9 +1,18 @@
 {
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cSpell.words": [
+        "Adafruit",
         "CHPD",
         "Erriez",
+        "haxfleisch",
+        "homekit",
+        "Homespan",
+        "Hypfer",
+        "kasik",
         "manu",
+        "microcontroller",
+        "NEOPIXEL",
+        "Testpoint",
         "togther",
         "unsoliciated",
         "VINDRIKTNING",
@@ -17,8 +26,8 @@
     "arduino.additionalUrls": [
         "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
     ],
-    "arduino.commandPath": "Contents/MacOS/Arduino",
-    "arduino.path": "/Applications/Arduino.app",
+    "arduino.commandPath": "arduino-cli",
+    "arduino.path": "/usr/local/bin/",
     "editor.fontFamily": "Fira Code",
     "editor.fontLigatures": true,
     "files.associations": {
@@ -49,5 +58,7 @@
     ],
     "yaml.schemas": {
         "https://json.schemastore.org/github-workflow.json": "file:///Users/user/git/esp32-air-quality/.github/workflows/build.yml"
-    }
+    },
+    "arduino.useArduinoCli": true,
+    "arduino.skipHeaderProvider": true
 }

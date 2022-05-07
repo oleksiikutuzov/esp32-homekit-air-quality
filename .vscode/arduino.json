@@ -4,5 +4,6 @@
     "port": "/dev/tty.usbserial-1410",
     "sketch": "air_quality/air_quality.ino",
     "output": "build",
-    "postbuild": "cp ./build/air_quality.ino.bin ./firmware.bin"
+    "postbuild": "cp ./build/air_quality.ino.bin ./esp32_air_quality.bin",
+    "programmer": "esptool"
 }
