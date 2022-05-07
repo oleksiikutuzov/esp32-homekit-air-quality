@@ -14,25 +14,13 @@
                 "~/Documents/Arduino/libraries/ESPAsyncWebServer/**",
                 "~/Documents/Arduino/libraries/AsyncElegantOTA/**",
                 "~/esp/esp-idf/components/lwip/lwip/src/include/**",
-                "~/Documents/Arduino/libraries/HomeSpan/src/**"
+                "~/Documents/Arduino/libraries/HomeSpan/src/**",
+                "src/**"
             ],
             "forcedInclude": [],
             "cStandard": "c17",
             "cppStandard": "c++20",
-            "defines": [],
-            "browse": {
-                "path": [
-                    "${workspaceFolder}/**",
-                    "~/Documents/Arduino/libraries/**",
-                    "~/Documents/Arduino/libraries/EspSoftwareSerial/**",
-                    "~/Documents/Arduino/libraries/AsyncTCP/**",
-                    "~/Documents/Arduino/libraries/ESPAsyncWebServer/**",
-                    "~/Documents/Arduino/libraries/AsyncElegantOTA/**",
-                    "~/esp/esp-idf/components/lwip/lwip/src/include/**",
-                    "~/Documents/Arduino/libraries/HomeSpan/src/**"
-                ],
-                "limitSymbolsToIncludedHeaders": false
-            }
+            "defines": []
         },
         {
             "name": "Arduino",
