@@ -1,0 +1,12 @@
+[submodule "extras/AsyncElegantOTA"]
+	path = extras/AsyncElegantOTA
+	url = https://github.com/ayushsharma82/AsyncElegantOTA
+[submodule "extras/ESPAsyncWebServer"]
+	path = extras/ESPAsyncWebServer
+	url = https://github.com/me-no-dev/ESPAsyncWebServer
+[submodule "extras/AsyncTCP"]
+	path = extras/AsyncTCP
+	url = https://github.com/me-no-dev/AsyncTCP
+[submodule "extras/ErriezMHZ19B"]
+	path = extras/ErriezMHZ19B
+	url = https://github.com/Erriez/ErriezMHZ19B
