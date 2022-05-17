@@ -85,7 +85,7 @@ void setup() {
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
-	new Characteristic::FirmwareRevision("1.0");
+	new Characteristic::FirmwareRevision("1.1");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
