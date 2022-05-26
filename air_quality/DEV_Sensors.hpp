@@ -2,8 +2,8 @@
 #include <SoftwareSerial.h>
 #include <ErriezMHZ19B.h>
 #include <Adafruit_NeoPixel.h>
-#include "SerialCom.h"
-#include "Types.h"
+#include "SerialCom.hpp"
+#include "Types.hpp"
 #include <Smoothed.h>
 
 #define MHZ19B_TX_PIN		 19
