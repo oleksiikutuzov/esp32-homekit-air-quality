@@ -50,12 +50,12 @@
  */
 
 #include <HomeSpan.h>
-#include "DEV_Sensors.h"
+#include "DEV_Sensors.hpp"
 #include <ErriezMHZ19B.h>
 #include <SoftwareSerial.h>
 #include <Adafruit_NeoPixel.h>
-#include "SerialCom.h"
-#include "Types.h"
+#include "SerialCom.hpp"
+#include "Types.hpp"
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 
