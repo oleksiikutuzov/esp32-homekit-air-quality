@@ -97,7 +97,7 @@ A list of settings variables is in the sketch. You can adjust the values up to y
 
 1. Plug your Air Quality sensor to power (ESP32 is powered through VINDRIKTNING).
 2. Press the button on the backside until the LED starts blinking rapidly and release it. Now it is in the configuration mode (More on [HomeSpan docs](https://github.com/HomeSpan/HomeSpan/blob/master/docs/UserGuide.md)). Press it two more times until the LED starts blinking 3 times in a row. This means mode 3 is chosen. Hold the button for 3-4 seconds once again and the WiFi AP will be started.
-3. Go to WiFi settings on your iPhone/iPad and connect to the "HomeSpan-Setup" WiFi network.
+3. Go to WiFi settings on your iPhone/iPad and connect to the "HomeSpan-Setup" WiFi network, password `homespan`.
 4. You will choose your WiFi network and set the setup code for the accessory.
 5. Go to your Home app and select "Add Accessory"
 6. Select "More Options" and you should see your Air Quality Sensor there.
