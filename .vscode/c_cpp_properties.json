@@ -14,8 +14,7 @@
                 "~/Documents/Arduino/libraries/ESPAsyncWebServer/**",
                 "~/Documents/Arduino/libraries/AsyncElegantOTA/**",
                 "~/esp/esp-idf/components/lwip/lwip/src/include/**",
-                "~/Documents/Arduino/libraries/HomeSpan/src/**",
-                "src/**"
+                "~/Documents/Arduino/libraries/HomeSpan/src/**"
             ],
             "forcedInclude": [],
             "cStandard": "c17",
