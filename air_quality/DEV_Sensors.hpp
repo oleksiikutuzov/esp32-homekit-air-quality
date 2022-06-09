@@ -24,6 +24,7 @@ int					  tick			= 0;
 bool				  airQualityAct = false;
 particleSensorState_t state;
 Smoothed<float>		  mySensor;
+Smoothed<float>		  mySensor_air;
 
 // Declare functions
 void detect_mhz();
@@ -191,6 +192,8 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 		SerialCom::setup();
 
+		mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+
 	} // end constructor
 
 	void loop() {
@@ -206,7 +209,9 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 					airQualityAct = true;
 				}
 
-				pm25->setVal(state.avgPM25);
+				mySensor_air.add(state.avgPM25);
+
+				pm25->setVal(mySensor_air.get());
 
 				int airQualityVal = 0;
 
