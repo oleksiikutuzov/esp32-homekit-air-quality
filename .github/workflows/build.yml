@@ -14,7 +14,7 @@ jobs:
         with:
           repository: ayushsharma82/ElegantOTA
           ref: master
-          path: ElegantOTA
+          path: CustomElegantOTA
 
       - name: Checkout ErriezMHZ19B library
         uses: actions/checkout@v2
