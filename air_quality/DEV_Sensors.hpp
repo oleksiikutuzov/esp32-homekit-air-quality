@@ -12,7 +12,7 @@
 #define HOMEKIT_CO2_TRIGGER	 1350 // co2 level, at which HomeKit alarm will be triggered
 #define NEOPIXEL_PIN		 16	  // Pin to which NeoPixel strip is connected
 #define NUMPIXELS			 1	  // Number of pixels
-#define BRIGHTNESS_DEFAULT	 10	  // Default (dimmed) brightness
+#define BRIGHTNESS_DEFAULT	 9	  // Default (dimmed) brightness
 #define BRIGHTNESS_MAX		 150  // maximum brightness of CO2 indicator led
 #define BRIGHTNESS_THRESHOLD 500  // TODO calibrate Threshold value of dimmed brightness
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected

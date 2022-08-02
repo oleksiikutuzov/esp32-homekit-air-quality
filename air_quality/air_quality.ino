@@ -49,43 +49,49 @@
  *                ╚═════════════════════════════╝
  */
 
-#include <HomeSpan.h>
+#define REQUIRED VERSION(1, 5, 1)
+
 #include "DEV_Sensors.hpp"
-#include <ErriezMHZ19B.h>
-#include <SoftwareSerial.h>
-#include <Adafruit_NeoPixel.h>
 #include "SerialCom.hpp"
 #include "Types.hpp"
-#include <ESPAsyncWebServer.h>
-#include <AsyncElegantOTA.h>
+#include <Adafruit_NeoPixel.h>
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include <ElegantOTA.h>
+#include <ErriezMHZ19B.h>
+#include <HomeSpan.h>
+#include <SoftwareSerial.h>
 
-#define BUTTON_PIN	   0
-#define LED_STATUS_PIN 26
+#define BUTTON_PIN				 0
+#define LED_STATUS_PIN			 26
 
-AsyncWebServer server(80);
+#define BOOT_REASON_MESSAGE_SIZE 150
 
-DEV_CO2Sensor		  *CO2; // GLOBAL POINTER TO STORE SERVICE
+WebServer server(80);
+
+DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
 DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
 
 void setup() {
 
 	Serial.begin(115200);
 
-	homeSpan.setControlPin(BUTTON_PIN);	   // Set button pin
-	homeSpan.setStatusPin(LED_STATUS_PIN); // Set status led pin
-	homeSpan.setLogLevel(0);			   // set log level
-	homeSpan.setPortNum(88);			   // change port number for HomeSpan so we can use port 80 for the Web Server
-	homeSpan.setStatusAutoOff(10);		   // turn off status led after 10 seconds of inactivity
-	homeSpan.setWifiCallback(setupWeb);	   // need to start Web Server after WiFi is established
-	homeSpan.reserveSocketConnections(3);  // reserve 3 socket connections for Web Server
-	// homeSpan.enableAutoStartAP();
+	homeSpan.setControlPin(BUTTON_PIN);						   // Set button pin
+	homeSpan.setStatusPin(LED_STATUS_PIN);					   // Set status led pin
+	homeSpan.setLogLevel(0);								   // set log level
+	homeSpan.setPortNum(88);								   // change port number for HomeSpan so we can use port 80 for the Web Server
+	homeSpan.setStatusAutoOff(10);							   // turn off status led after 10 seconds of inactivity
+	homeSpan.setWifiCallback(setupWeb);						   // need to start Web Server after WiFi is established
+	homeSpan.reserveSocketConnections(3);					   // reserve 3 socket connections for Web Server
+	homeSpan.enableWebLog(10, "pool.ntp.org", "UTC", "myLog"); // enable Web Log
+	homeSpan.enableAutoStartAP();							   // enable auto start AP
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
-	new Characteristic::FirmwareRevision("1.2");
+	new Characteristic::FirmwareRevision("1.3");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
@@ -101,42 +107,42 @@ void setup() {
 }
 
 void loop() {
-
 	homeSpan.poll();
+	server.handleClient();
 }
 
 void setupWeb() {
 	Serial.print("Starting Air Quality Sensor Server Hub...\n\n");
 
-	server.on("/metrics", HTTP_GET, [](AsyncWebServerRequest *request) {
+	server.on("/metrics", HTTP_GET, []() {
 		double airQuality = AQI->pm25->getVal();
 		double co2		  = CO2->co2Level->getVal();
 		if (co2 >= 400) { // exclude when it is still warming up
 			// double lightness		= neopixelAutoBrightness();
 			double uptime			= esp_timer_get_time() / (6 * 10e6);
 			double heap				= esp_get_free_heap_size();
-			String airQualityMetric = "# HELP air_quality PM2.5 Density\nair_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
-			String CO2Metric		= "# HELP co2 Carbon Dioxide\ncarbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
-			String uptimeMetric		= "# HELP uptime Sensor uptime\nuptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
-			String heapMetric		= "# HELP heap Available heap memory\nheap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
+			String airQualityMetric = "# HELP air_quality PM2.5 Density\nhomekit_air_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
+			String CO2Metric		= "# HELP co2 Carbon Dioxide\nhomekit_carbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
+			String uptimeMetric		= "# HELP uptime Sensor uptime\nhomekit_uptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
+			String heapMetric		= "# HELP heap Available heap memory\nhomekit_heap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
 			// String lightnessMetric	= "# HELP lightness Lightness\nlightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
 			Serial.println(airQualityMetric);
 			Serial.println(CO2Metric);
 			Serial.println(uptimeMetric);
 			Serial.println(heapMetric);
-			request->send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric);
+			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric);
 		}
 	});
 
-	server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request) {
+	server.on("/reboot", HTTP_GET, []() {
 		String content = "<html><body>Rebooting!  Will return to configuration page in 10 seconds.<br><br>";
 		content += "<meta http-equiv = \"refresh\" content = \"10; url = /\" />";
-		request->send(200, "text/html", content);
+		server.send(200, "text/html", content);
 
 		ESP.restart();
 	});
 
-	AsyncElegantOTA.begin(&server); // Start AsyncElegantOTA
+	ElegantOTA.begin(&server); // Start AsyncElegantOTA
 	server.begin();
 	Serial.println("HTTP server started");
 } // setupWeb

@@ -4,10 +4,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Erase Flash",
-            "type": "shell",
-            "command": "esptool.py -p /dev/cu.usbserial-1410 erase_flash",
-            "problemMatcher": []
+            "label": "ESP32: Build",
+            "command": "${command:arduino.verify}",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
