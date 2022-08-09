@@ -142,7 +142,7 @@ void setupWeb() {
 		ESP.restart();
 	});
 
-	ElegantOTA.begin(&server); // Start AsyncElegantOTA
+	ElegantOTA.begin(&server); // Start ElegantOTA
 	server.begin();
 	Serial.println("HTTP server started");
 } // setupWeb
