@@ -6,6 +6,10 @@
 #include "Types.hpp"
 #include <Smoothed.h>
 
+// I2C for temp sensor
+#include <Wire.h>
+#define si7021Addr			 0x40 // I2C address for temp sensor
+
 #define MHZ19B_TX_PIN		 19
 #define MHZ19B_RX_PIN		 18
 #define INTERVAL			 10	  // in seconds
@@ -18,6 +22,10 @@
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
 #define SMOOTHING_COEFF		 10	  // Number of elements in the vector of previous values
 
+// TODO as HomeKit characteristics
+#define TEMPERATURE_OFFSET	 -1.0
+#define HUMIDITY_OFFSET		 +5.0
+
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
 int					  tick			= 0;
@@ -27,11 +35,12 @@ Smoothed<float>		  mySensor;
 Smoothed<float>		  mySensor_air;
 
 // Declare functions
-void detect_mhz();
-void fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
-void fadeOut(int pixel, int r, int g, int b, double duration);
-void initAnimation();
-int	 neopixelAutoBrightness();
+void   detect_mhz();
+void   fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
+void   fadeOut(int pixel, int r, int g, int b, double duration);
+void   initAnimation();
+int	   neopixelAutoBrightness();
+double getBrightness();
 
 ////////////////////////////////////
 //   DEVICE-SPECIFIC LED SERVICES //
@@ -64,7 +73,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 		mhzSerial.begin(9600);
 
-		detect_mhz();
+		// detect_mhz(); //! uncomment
 
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
@@ -234,6 +243,120 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 	} // loop
 };
 
+struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air Quality sensor
+
+	SpanCharacteristic *temp; // reference to the Temperature Characteristic
+
+	DEV_TemperatureSensor() : Service::TemperatureSensor() { // constructor() method
+
+		temp = new Characteristic::CurrentTemperature(-10.0);
+		temp->setRange(-50, 100);
+
+		Wire.begin();
+
+		Serial.print("Configuring Temperature Sensor"); // initialization message
+		Serial.print("\n");
+
+		Wire.beginTransmission(si7021Addr);
+		Wire.endTransmission();
+
+		delay(300);
+
+		// mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+
+	} // end constructor
+
+	void loop() {
+
+		if (temp->timeVal() > INTERVAL * 1000) { // modify the Temperature Characteristic every 10 seconds
+
+			unsigned int data[2];
+
+			Wire.beginTransmission(si7021Addr);
+			// Send temperature measurement command
+			Wire.write(0xF3);
+			Wire.endTransmission();
+			delay(500);
+
+			// Request 2 bytes of data
+			Wire.requestFrom(si7021Addr, 2);
+
+			// Read 2 bytes of data for temperature
+			if (Wire.available() == 2) {
+				data[0] = Wire.read();
+				data[1] = Wire.read();
+			}
+
+			// Convert the data
+			float temperature = ((data[0] * 256.0) + data[1]);
+			temperature		  = ((175.72 * temperature) / 65536.0) - 46.85;
+
+			LOG1("Current temperature: ");
+			LOG1(temperature);
+			LOG1("\n");
+
+			temp->setVal(temperature);
+		}
+
+	} // loop
+};
+
+struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Quality sensor
+
+	SpanCharacteristic *hum; // reference to the Temperature Characteristic
+
+	DEV_HumiditySensor() : Service::HumiditySensor() { // constructor() method
+
+		hum = new Characteristic::CurrentRelativeHumidity();
+
+		// Wire.begin();
+
+		Serial.print("Configuring Humidity Sensor"); // initialization message
+		Serial.print("\n");
+
+		// Wire.beginTransmission(si7021Addr);
+		// Wire.endTransmission();
+
+		// delay(300);
+
+		// mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+
+	} // end constructor
+
+	void loop() {
+
+		if (hum->timeVal() > INTERVAL * 1000) { // modify the Temperature Characteristic every 10 seconds
+
+			unsigned int data[2];
+
+			Wire.beginTransmission(si7021Addr);
+			// Send humidity measurement command
+			Wire.write(0xF5);
+			Wire.endTransmission();
+			delay(500);
+
+			// Request 2 bytes of data
+			Wire.requestFrom(si7021Addr, 2);
+			// Read 2 bytes of data to get humidity
+			if (Wire.available() == 2) {
+				data[0] = Wire.read();
+				data[1] = Wire.read();
+			}
+
+			// Convert the data
+			float humidity = ((data[0] * 256.0) + data[1]);
+			humidity	   = ((125 * humidity) / 65536.0) - 6;
+
+			LOG1("Current humidity: ");
+			LOG1(humidity);
+			LOG1("\n");
+
+			hum->setVal(humidity);
+		}
+
+	} // loop
+};
+
 // HELPER FUNCTIONS
 
 void detect_mhz() {
@@ -309,7 +432,8 @@ void initAnimation() {
 
 // Function for setting brightness based on light sensor values
 int neopixelAutoBrightness() {
-	double sensorValue = analogRead(ANALOG_PIN);
+	int sensorValue = analogRead(ANALOG_PIN);
+	WEBLOG("Lightness: %d", sensorValue);
 	// print the readings in the Serial Monitor
 	Serial.println(sensorValue);
 
@@ -318,4 +442,11 @@ int neopixelAutoBrightness() {
 	} else {
 		return BRIGHTNESS_MAX;
 	}
+}
+
+// return raw sensor value
+double getBrightness() {
+	double sensorValue = analogRead(ANALOG_PIN);
+	WEBLOG("Lightness: %f", sensorValue);
+	return sensorValue;
 }
