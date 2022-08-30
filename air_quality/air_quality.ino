@@ -131,25 +131,32 @@ void loop() {
 }
 
 void setupWeb() {
-	Serial.print("Starting Air Quality Sensor Server Hub...\n\n");
+	LOG0("Starting Air Quality Sensor Server Hub...\n\n");
 
 	server.on("/metrics", HTTP_GET, []() {
-		double airQuality = AQI->pm25->getVal();
-		double co2		  = CO2->co2Level->getVal();
+		float airQuality = AQI->pm25->getVal();
+		float co2		 = CO2->co2Level->getVal();
+		float temp		 = TEMP->temp->getVal<float>();
+		float hum		 = HUM->hum->getVal<float>();
 		if (co2 >= 400) { // exclude when it is still warming up // TODO change to bool warmup
 			int	   lightness		= neopixelAutoBrightness();
-			double uptime			= esp_timer_get_time() / (6 * 10e6);
-			double heap				= esp_get_free_heap_size();
+			float  uptime			= esp_timer_get_time() / (6 * 10e6);
+			float  heap				= esp_get_free_heap_size();
 			String airQualityMetric = "# HELP air_quality PM2.5 Density\nhomekit_air_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
 			String CO2Metric		= "# HELP co2 Carbon Dioxide\nhomekit_carbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
 			String uptimeMetric		= "# HELP uptime Sensor uptime\nhomekit_uptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
 			String heapMetric		= "# HELP heap Available heap memory\nhomekit_heap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
 			String lightnessMetric	= "# HELP lightness Lightness\nhomekit_lightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
-			Serial.println(airQualityMetric);
-			Serial.println(CO2Metric);
-			Serial.println(uptimeMetric);
-			Serial.println(heapMetric);
-			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric);
+			String tempMetric		= "# HELP temp Temperature\nhomekit_temperature{device=\"air_sensor\",location=\"home\"} " + String(temp);
+			String humMetric		= "# HELP hum Relative Humidity\nhomekit_humidity{device=\"air_sensor\",location=\"home\"} " + String(hum);
+			LOG1(airQualityMetric);
+			LOG1(CO2Metric);
+			LOG1(uptimeMetric);
+			LOG1(heapMetric);
+			LOG1(lightnessMetric);
+			LOG1(tempMetric);
+			LOG1(humMetric);
+			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric + "\n" + tempMetric + "\n" + humMetric);
 		}
 	});
 
