@@ -2,4 +2,4 @@
 build/
 *.bin
 *.code-workspace
-.vscode/c_cpp_properties.json
+c_cpp_properties.json
