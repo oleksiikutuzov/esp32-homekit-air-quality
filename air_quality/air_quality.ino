@@ -65,12 +65,12 @@
 #define BUTTON_PIN	   0
 #define LED_STATUS_PIN 26
 
-#define HARDWARE_VER   4
-
 WebServer server(80);
 
 DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
 DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
+
+extern "C++" bool needToWarmUp;
 
 #if HARDWARE_VER == 4
 DEV_TemperatureSensor *TEMP;
@@ -136,27 +136,44 @@ void setupWeb() {
 	server.on("/metrics", HTTP_GET, []() {
 		float airQuality = AQI->pm25->getVal();
 		float co2		 = CO2->co2Level->getVal();
-		float temp		 = TEMP->temp->getVal<float>();
-		float hum		 = HUM->hum->getVal<float>();
-		if (co2 >= 400) { // exclude when it is still warming up // TODO change to bool warmup
-			int	   lightness		= neopixelAutoBrightness();
-			float  uptime			= esp_timer_get_time() / (6 * 10e6);
-			float  heap				= esp_get_free_heap_size();
-			String airQualityMetric = "# HELP air_quality PM2.5 Density\nhomekit_air_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
-			String CO2Metric		= "# HELP co2 Carbon Dioxide\nhomekit_carbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
-			String uptimeMetric		= "# HELP uptime Sensor uptime\nhomekit_uptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
-			String heapMetric		= "# HELP heap Available heap memory\nhomekit_heap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
-			String lightnessMetric	= "# HELP lightness Lightness\nhomekit_lightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
-			String tempMetric		= "# HELP temp Temperature\nhomekit_temperature{device=\"air_sensor\",location=\"home\"} " + String(temp);
-			String humMetric		= "# HELP hum Relative Humidity\nhomekit_humidity{device=\"air_sensor\",location=\"home\"} " + String(hum);
-			LOG1(airQualityMetric);
-			LOG1(CO2Metric);
-			LOG1(uptimeMetric);
-			LOG1(heapMetric);
-			LOG1(lightnessMetric);
-			LOG1(tempMetric);
-			LOG1(humMetric);
+#if HARDWARE_VER == 4
+		float temp = TEMP->temp->getVal<float>();
+		float hum  = HUM->hum->getVal<float>();
+#endif
+		int	   lightness		= neopixelAutoBrightness();
+		float  uptime			= esp_timer_get_time() / (6 * 10e6);
+		float  heap				= esp_get_free_heap_size();
+		String airQualityMetric = "# HELP air_quality PM2.5 Density\nhomekit_air_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
+		String CO2Metric		= "# HELP co2 Carbon Dioxide\nhomekit_carbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
+		String uptimeMetric		= "# HELP uptime Sensor uptime\nhomekit_uptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
+		String heapMetric		= "# HELP heap Available heap memory\nhomekit_heap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
+		String lightnessMetric	= "# HELP lightness Lightness\nhomekit_lightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
+#if HARDWARE_VER == 4
+		String tempMetric = "# HELP temp Temperature\nhomekit_temperature{device=\"air_sensor\",location=\"home\"} " + String(temp);
+		String humMetric  = "# HELP hum Relative Humidity\nhomekit_humidity{device=\"air_sensor\",location=\"home\"} " + String(hum);
+#endif
+		LOG1(airQualityMetric);
+		LOG1(CO2Metric);
+		LOG1(uptimeMetric);
+		LOG1(heapMetric);
+		LOG1(lightnessMetric);
+#if HARDWARE_VER == 4
+		LOG1(tempMetric);
+		LOG1(humMetric);
+#endif
+		if (needToWarmUp == 0) { // exclude co2 and air quality if it is still warming up
+#if HARDWARE_VER == 4
 			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric + "\n" + tempMetric + "\n" + humMetric);
+#else
+			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric);
+#endif
+		} else {
+#if HARDWARE_VER == 4
+			server.send(200, "text/plain", uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric + "\n" + tempMetric + "\n" + humMetric);
+#else
+			server.send(200, "text/plain", uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric);
+
+#endif
 		}
 	});
 
