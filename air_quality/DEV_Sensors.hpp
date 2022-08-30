@@ -29,8 +29,10 @@ bool				  playInitAnim	= true;
 int					  tick			= 0;
 bool				  airQualityAct = false;
 particleSensorState_t state;
-Smoothed<float>		  mySensor;
+Smoothed<float>		  mySensor_co2;
 Smoothed<float>		  mySensor_air;
+Smoothed<float>		  mySensor_temp;
+Smoothed<float>		  mySensor_hum;
 
 // Declare functions
 void   detect_mhz();
@@ -88,7 +90,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		pixels.setBrightness(50);
 		pixels.show();
 
-		mySensor.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+		mySensor_co2.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
 	}
 
 	void loop() {
@@ -136,9 +138,9 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 				LOG1(co2_value);
 				LOG1(" ppm\n");
 
-				mySensor.add(co2_value);
+				mySensor_co2.add(co2_value);
 
-				co2Level->setVal(mySensor.get()); // set the new co value; this generates an Event Notification and also resets the elapsed time
+				co2Level->setVal(mySensor_co2.get()); // set the new co value; this generates an Event Notification and also resets the elapsed time
 				LOG1("Carbon Dioxide Update: ");
 				LOG1(co2Level->getVal());
 				LOG1("\n");
@@ -276,7 +278,7 @@ struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air 
 
 		delay(300);
 
-		// mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+		mySensor_temp.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF);
 
 	} // end constructor
 
@@ -304,22 +306,22 @@ struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air 
 			// Convert the data
 			float temperature = ((data[0] * 256.0) + data[1]);
 			temperature		  = ((175.72 * temperature) / 65536.0) - 46.85;
+			mySensor_temp.add(temperature);
+			float offset = offsetTemp.getVal<float>();
 
 			LOG1("Current temperature: ");
-			LOG1(temperature);
+			LOG1(mySensor_temp.get());
 			LOG1("\n");
-
-			float offset = offsetTemp.getVal<float>();
 
 			LOG1("Offset: ");
 			LOG1(offset);
 			LOG1("\n");
 
 			LOG1("Current corrected temperature: ");
-			LOG1(temperature + offset);
+			LOG1(mySensor_temp.get() + offset);
 			LOG1("\n");
 
-			temp->setVal(temperature + offset);
+			temp->setVal(mySensor_temp.get() + offset);
 		}
 
 	} // loop
@@ -334,8 +336,6 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 
 		hum = new Characteristic::CurrentRelativeHumidity();
 
-		// Wire.begin();
-
 		Serial.print("Configuring Humidity Sensor"); // initialization message
 		Serial.print("\n");
 
@@ -343,12 +343,7 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 		offsetHum.setDescription("Humidity Offset");
 		offsetHum.setRange(-10, 10, 1);
 
-		// Wire.beginTransmission(si7021Addr);
-		// Wire.endTransmission();
-
-		// delay(300);
-
-		// mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+		mySensor_hum.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF);
 
 	} // end constructor
 
@@ -375,10 +370,11 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 			// Convert the data
 			float humidity = ((data[0] * 256.0) + data[1]);
 			humidity	   = ((125 * humidity) / 65536.0) - 6;
-			float offset   = offsetHum.getVal<float>();
+			mySensor_hum.add(humidity);
+			float offset = offsetHum.getVal<float>();
 
 			LOG1("Current humidity: ");
-			LOG1(humidity);
+			LOG1(mySensor_hum.get());
 			LOG1("\n");
 
 			LOG1("Offset: ");
@@ -386,10 +382,10 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 			LOG1("\n");
 
 			LOG1("Current corrected humidity: ");
-			LOG1(humidity + offset);
+			LOG1(mySensor_hum.get() + offset);
 			LOG1("\n");
 
-			hum->setVal(humidity + offset);
+			hum->setVal(mySensor_hum.get() + offset);
 		}
 
 	} // loop
