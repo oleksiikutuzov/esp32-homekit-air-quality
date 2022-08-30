@@ -49,7 +49,7 @@
  *                ╚═════════════════════════════╝
  */
 
-#define REQUIRED VERSION(1, 5, 1)
+#define REQUIRED VERSION(1, 6, 0)
 
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
@@ -65,12 +65,17 @@
 #define BUTTON_PIN	   0
 #define LED_STATUS_PIN 26
 
+#define HARDWARE_VER   4
+
 WebServer server(80);
 
-DEV_CO2Sensor		  *CO2; // GLOBAL POINTER TO STORE SERVICE
-DEV_AirQualitySensor  *AQI; // GLOBAL POINTER TO STORE SERVICE
+DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
+DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
+
+#if HARDWARE_VER == 4
 DEV_TemperatureSensor *TEMP;
 DEV_HumiditySensor	  *HUM;
+#endif
 
 void setup() {
 
@@ -105,6 +110,7 @@ void setup() {
 	new Characteristic::Name("Air Quality Sensor");
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 
+#if HARDWARE_VER == 4
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
@@ -116,6 +122,7 @@ void setup() {
 	new Characteristic::Identify();
 	new Characteristic::Name("Humidity Sensor");
 	HUM = new DEV_HumiditySensor(); // Create a Temperature Sensor (see DEV_Sensors.h for definition)
+#endif
 }
 
 void loop() {

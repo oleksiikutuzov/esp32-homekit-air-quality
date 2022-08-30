@@ -22,9 +22,7 @@
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
 #define SMOOTHING_COEFF		 10	  // Number of elements in the vector of previous values
 
-// TODO as HomeKit characteristics
-#define TEMPERATURE_OFFSET	 -1.0
-#define HUMIDITY_OFFSET		 +5.0
+#define HARDWARE_VER		 4
 
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
@@ -54,6 +52,14 @@ ErriezMHZ19B mhz19b(&mhzSerial);
 
 // Create Neopixel object
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+#if HARDWARE_VER == 4
+// Custom characteristics
+// clang-format off
+CUSTOM_CHAR(OffsetTemperature, 00000001-0001-0001-0001-46637266EA00, PR + PW + EV, FLOAT, 0.0, -5.0, 5.0, false); // create Custom Characteristic to "select" special effects via Eve App
+CUSTOM_CHAR(OffsetHumidity, 00000002-0001-0001-0001-46637266EA00, PR + PW + EV, FLOAT, 0, -10, 10, false);
+// clang-format on
+#endif
 
 struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperature sensor
 
@@ -243,14 +249,22 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 	} // loop
 };
 
+#if HARDWARE_VER == 4
+
 struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air Quality sensor
 
 	SpanCharacteristic *temp; // reference to the Temperature Characteristic
+
+	Characteristic::OffsetTemperature offsetTemp{0.0, true};
 
 	DEV_TemperatureSensor() : Service::TemperatureSensor() { // constructor() method
 
 		temp = new Characteristic::CurrentTemperature(-10.0);
 		temp->setRange(-50, 100);
+
+		offsetTemp.setUnit("Deg."); // configures custom "Selector" characteristic for use with Eve HomeKit
+		offsetTemp.setDescription("Temperature Offset");
+		offsetTemp.setRange(-5.0, 5.0, 0.2);
 
 		Wire.begin();
 
@@ -295,7 +309,17 @@ struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air 
 			LOG1(temperature);
 			LOG1("\n");
 
-			temp->setVal(temperature);
+			float offset = offsetTemp.getVal<float>();
+
+			LOG1("Offset: ");
+			LOG1(offset);
+			LOG1("\n");
+
+			LOG1("Current corrected temperature: ");
+			LOG1(temperature + offset);
+			LOG1("\n");
+
+			temp->setVal(temperature + offset);
 		}
 
 	} // loop
@@ -303,7 +327,8 @@ struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air 
 
 struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Quality sensor
 
-	SpanCharacteristic *hum; // reference to the Temperature Characteristic
+	SpanCharacteristic			  *hum; // reference to the Temperature Characteristic
+	Characteristic::OffsetHumidity offsetHum{0, true};
 
 	DEV_HumiditySensor() : Service::HumiditySensor() { // constructor() method
 
@@ -313,6 +338,10 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 
 		Serial.print("Configuring Humidity Sensor"); // initialization message
 		Serial.print("\n");
+
+		offsetHum.setUnit("%"); // configures custom "Selector" characteristic for use with Eve HomeKit
+		offsetHum.setDescription("Humidity Offset");
+		offsetHum.setRange(-10, 10, 1);
 
 		// Wire.beginTransmission(si7021Addr);
 		// Wire.endTransmission();
@@ -346,16 +375,27 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 			// Convert the data
 			float humidity = ((data[0] * 256.0) + data[1]);
 			humidity	   = ((125 * humidity) / 65536.0) - 6;
+			float offset   = offsetHum.getVal<float>();
 
 			LOG1("Current humidity: ");
 			LOG1(humidity);
 			LOG1("\n");
 
-			hum->setVal(humidity);
+			LOG1("Offset: ");
+			LOG1(offset);
+			LOG1("\n");
+
+			LOG1("Current corrected humidity: ");
+			LOG1(humidity + offset);
+			LOG1("\n");
+
+			hum->setVal(humidity + offset);
 		}
 
 	} // loop
 };
+
+#endif
 
 // HELPER FUNCTIONS
 
