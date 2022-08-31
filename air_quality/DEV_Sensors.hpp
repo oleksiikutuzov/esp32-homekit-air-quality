@@ -469,7 +469,7 @@ void initAnimation() {
 // Function for setting brightness based on light sensor values
 int neopixelAutoBrightness() {
 	int sensorValue = analogRead(ANALOG_PIN);
-	WEBLOG("Lightness: %d", sensorValue);
+	// WEBLOG("Lightness: %d", sensorValue);
 	// print the readings in the Serial Monitor
 	Serial.println(sensorValue);
 

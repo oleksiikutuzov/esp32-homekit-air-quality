@@ -49,8 +49,7 @@
  *                ╚═════════════════════════════╝
  */
 
-#define REQUIRED   VERSION(1, 6, 0)
-#define FW_VERSION "1.3"
+#define REQUIRED VERSION(1, 6, 0)
 
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
@@ -62,6 +61,7 @@
 #include <ErriezMHZ19B.h>
 #include <HomeSpan.h>
 #include <SoftwareSerial.h>
+#include "OTA.hpp"
 
 #define BUTTON_PIN	   0
 #define LED_STATUS_PIN 26
@@ -81,6 +81,9 @@ DEV_HumiditySensor	  *HUM;
 void setup() {
 
 	Serial.begin(115200);
+
+	Serial.print("Active firmware version: ");
+	Serial.println(FirmwareVer);
 
 	String	   temp			  = FW_VERSION;
 	const char compile_date[] = __DATE__ " " __TIME__;
@@ -138,6 +141,7 @@ void setup() {
 void loop() {
 	homeSpan.poll();
 	server.handleClient();
+	repeatedCall();
 }
 
 void setupWeb() {

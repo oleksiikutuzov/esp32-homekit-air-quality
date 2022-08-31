@@ -1,5 +1,5 @@
 .DS_Store
 build/
-*.bin
+esp32_air_quality_*.bin
 *.code-workspace
 c_cpp_properties.json
