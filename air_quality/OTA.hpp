@@ -5,10 +5,10 @@
 #include "cert.h"
 #include <HomeSpan.h>
 
-#define URL_fw_Version "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0_test_updater/bin_version.txt"
-#define URL_fw_Bin	   "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0_test_updater/esp32_air_quality.bin"
+#define URL_fw_Version "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/bin_version.txt"
+#define URL_fw_Bin	   "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/esp32_air_quality.bin"
 
-#define FW_VERSION	   "1.4.1"
+#define FW_VERSION	   "1.4.2"
 
 String FirmwareVer = {
 	FW_VERSION};
