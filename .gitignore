@@ -3,3 +3,4 @@ build/
 esp32_air_quality_*.bin
 *.code-workspace
 c_cpp_properties.json
+settings.json
