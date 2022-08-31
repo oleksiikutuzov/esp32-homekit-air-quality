@@ -50,7 +50,7 @@
  */
 
 #define REQUIRED   VERSION(1, 6, 0)
-#define FW_VERSION "1.3"
+#define FW_VERSION "1.4"
 
 String FirmwareVer = {
 	FW_VERSION};
