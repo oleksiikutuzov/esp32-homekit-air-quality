@@ -49,7 +49,8 @@
  *                ╚═════════════════════════════╝
  */
 
-#define REQUIRED VERSION(1, 6, 0)
+#define REQUIRED   VERSION(1, 6, 0)
+#define FW_VERSION "1.3"
 
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
@@ -81,6 +82,14 @@ void setup() {
 
 	Serial.begin(115200);
 
+	String	   temp			  = FW_VERSION;
+	const char compile_date[] = __DATE__ " " __TIME__;
+	char	  *fw_ver		  = new char[temp.length() + 30];
+	strcpy(fw_ver, temp.c_str());
+	strcat(fw_ver, " (");
+	strcat(fw_ver, compile_date);
+	strcat(fw_ver, ")");
+
 	homeSpan.setControlPin(BUTTON_PIN);						   // Set button pin
 	homeSpan.setStatusPin(LED_STATUS_PIN);					   // Set status led pin
 	homeSpan.setLogLevel(1);								   // set log level
@@ -90,13 +99,14 @@ void setup() {
 	homeSpan.reserveSocketConnections(3);					   // reserve 3 socket connections for Web Server
 	homeSpan.enableWebLog(10, "pool.ntp.org", "UTC", "myLog"); // enable Web Log
 	homeSpan.enableAutoStartAP();							   // enable auto start AP
+	homeSpan.setSketchVersion(fw_ver);
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
-	new Characteristic::FirmwareRevision("1.3");
+	new Characteristic::FirmwareRevision(temp.c_str());
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
