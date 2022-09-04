@@ -12,7 +12,7 @@
 #else
 #define URL_fw_Bin "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/esp32_air_quality_v3.bin"
 #endif
-#define FW_VERSION "1.4.2"
+#define FW_VERSION "1.4.3"
 
 String FirmwareVer = {
 	FW_VERSION};
