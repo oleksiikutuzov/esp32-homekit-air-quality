@@ -6,6 +6,10 @@
 #include "Types.hpp"
 #include <Smoothed.h>
 
+// I2C for temp sensor
+#include <Wire.h>
+#define si7021Addr			 0x40 // I2C address for temp sensor
+
 #define MHZ19B_TX_PIN		 19
 #define MHZ19B_RX_PIN		 18
 #define INTERVAL			 10	  // in seconds
@@ -18,20 +22,27 @@
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
 #define SMOOTHING_COEFF		 10	  // Number of elements in the vector of previous values
 
+#ifndef HARDWARE_VER
+#define HARDWARE_VER 4
+#endif
+
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
 int					  tick			= 0;
 bool				  airQualityAct = false;
 particleSensorState_t state;
-Smoothed<float>		  mySensor;
+Smoothed<float>		  mySensor_co2;
 Smoothed<float>		  mySensor_air;
+Smoothed<float>		  mySensor_temp;
+Smoothed<float>		  mySensor_hum;
 
 // Declare functions
-void detect_mhz();
-void fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
-void fadeOut(int pixel, int r, int g, int b, double duration);
-void initAnimation();
-int	 neopixelAutoBrightness();
+void   detect_mhz();
+void   fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
+void   fadeOut(int pixel, int r, int g, int b, double duration);
+void   initAnimation();
+int	   neopixelAutoBrightness();
+double getBrightness();
 
 ////////////////////////////////////
 //   DEVICE-SPECIFIC LED SERVICES //
@@ -46,6 +57,14 @@ ErriezMHZ19B mhz19b(&mhzSerial);
 // Create Neopixel object
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
+#if HARDWARE_VER == 4
+// Custom characteristics
+// clang-format off
+CUSTOM_CHAR(OffsetTemperature, 00000001-0001-0001-0001-46637266EA00, PR + PW + EV, FLOAT, 0.0, -5.0, 5.0, false); // create Custom Characteristic to "select" special effects via Eve App
+CUSTOM_CHAR(OffsetHumidity, 00000002-0001-0001-0001-46637266EA00, PR + PW + EV, FLOAT, 0, -10, 10, false);
+// clang-format on
+#endif
+
 struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperature sensor
 
 	SpanCharacteristic *co2Detected;
@@ -56,7 +75,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 	DEV_CO2Sensor() : Service::CarbonDioxideSensor() { // constructor() method
 
 		co2Detected		= new Characteristic::CarbonDioxideDetected(false);
-		co2Level		= new Characteristic::CarbonDioxideLevel(399);
+		co2Level		= new Characteristic::CarbonDioxideLevel(400);
 		co2PeakLevel	= new Characteristic::CarbonDioxidePeakLevel(400);
 		co2StatusActive = new Characteristic::StatusActive(false);
 
@@ -64,7 +83,9 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 		mhzSerial.begin(9600);
 
+#if HARDWARE_VER != 4
 		detect_mhz();
+#endif
 
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
@@ -73,7 +94,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		pixels.setBrightness(50);
 		pixels.show();
 
-		mySensor.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+		mySensor_co2.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
 	}
 
 	void loop() {
@@ -121,9 +142,9 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 				LOG1(co2_value);
 				LOG1(" ppm\n");
 
-				mySensor.add(co2_value);
+				mySensor_co2.add(co2_value);
 
-				co2Level->setVal(mySensor.get()); // set the new co value; this generates an Event Notification and also resets the elapsed time
+				co2Level->setVal(mySensor_co2.get()); // set the new co value; this generates an Event Notification and also resets the elapsed time
 				LOG1("Carbon Dioxide Update: ");
 				LOG1(co2Level->getVal());
 				LOG1("\n");
@@ -234,6 +255,148 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 	} // loop
 };
 
+#if HARDWARE_VER == 4
+
+struct DEV_TemperatureSensor : Service::TemperatureSensor { // A standalone Air Quality sensor
+
+	SpanCharacteristic *temp; // reference to the Temperature Characteristic
+
+	Characteristic::OffsetTemperature offsetTemp{0.0, true};
+
+	DEV_TemperatureSensor() : Service::TemperatureSensor() { // constructor() method
+
+		temp = new Characteristic::CurrentTemperature(-10.0);
+		temp->setRange(-50, 100);
+
+		offsetTemp.setUnit("Deg."); // configures custom "Selector" characteristic for use with Eve HomeKit
+		offsetTemp.setDescription("Temperature Offset");
+		offsetTemp.setRange(-5.0, 5.0, 0.2);
+
+		Wire.begin();
+
+		Serial.print("Configuring Temperature Sensor"); // initialization message
+		Serial.print("\n");
+
+		Wire.beginTransmission(si7021Addr);
+		Wire.endTransmission();
+
+		delay(300);
+
+		mySensor_temp.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF);
+
+	} // end constructor
+
+	void loop() {
+
+		if (temp->timeVal() > INTERVAL * 1000) { // modify the Temperature Characteristic every 10 seconds
+
+			unsigned int data[2];
+
+			Wire.beginTransmission(si7021Addr);
+			// Send temperature measurement command
+			Wire.write(0xF3);
+			Wire.endTransmission();
+			delay(500);
+
+			// Request 2 bytes of data
+			Wire.requestFrom(si7021Addr, 2);
+
+			// Read 2 bytes of data for temperature
+			if (Wire.available() == 2) {
+				data[0] = Wire.read();
+				data[1] = Wire.read();
+			}
+
+			// Convert the data
+			float temperature = ((data[0] * 256.0) + data[1]);
+			temperature		  = ((175.72 * temperature) / 65536.0) - 46.85;
+			mySensor_temp.add(temperature);
+			float offset = offsetTemp.getVal<float>();
+
+			LOG1("Current temperature: ");
+			LOG1(mySensor_temp.get());
+			LOG1("\n");
+
+			LOG1("Offset: ");
+			LOG1(offset);
+			LOG1("\n");
+
+			LOG1("Current corrected temperature: ");
+			LOG1(mySensor_temp.get() + offset);
+			LOG1("\n");
+
+			temp->setVal(mySensor_temp.get() + offset);
+		}
+
+	} // loop
+};
+
+struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Quality sensor
+
+	SpanCharacteristic			  *hum; // reference to the Temperature Characteristic
+	Characteristic::OffsetHumidity offsetHum{0, true};
+
+	DEV_HumiditySensor() : Service::HumiditySensor() { // constructor() method
+
+		hum = new Characteristic::CurrentRelativeHumidity();
+
+		Serial.print("Configuring Humidity Sensor"); // initialization message
+		Serial.print("\n");
+
+		offsetHum.setUnit("%"); // configures custom "Selector" characteristic for use with Eve HomeKit
+		offsetHum.setDescription("Humidity Offset");
+		offsetHum.setRange(-10, 10, 1);
+
+		mySensor_hum.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF);
+
+	} // end constructor
+
+	void loop() {
+
+		if (hum->timeVal() > INTERVAL * 1000) { // modify the Temperature Characteristic every 10 seconds
+
+			unsigned int data[2];
+
+			Wire.beginTransmission(si7021Addr);
+			// Send humidity measurement command
+			Wire.write(0xF5);
+			Wire.endTransmission();
+			delay(500);
+
+			// Request 2 bytes of data
+			Wire.requestFrom(si7021Addr, 2);
+			// Read 2 bytes of data to get humidity
+			if (Wire.available() == 2) {
+				data[0] = Wire.read();
+				data[1] = Wire.read();
+			}
+
+			// Convert the data
+			float humidity = ((data[0] * 256.0) + data[1]);
+			humidity	   = ((125 * humidity) / 65536.0) - 6;
+			mySensor_hum.add(humidity);
+			float offset = offsetHum.getVal<float>();
+
+			LOG1("Current humidity: ");
+			LOG1(mySensor_hum.get());
+			LOG1("\n");
+
+			LOG1("Offset: ");
+			LOG1(offset);
+			LOG1("\n");
+
+			LOG1("Current corrected humidity: ");
+			LOG1(mySensor_hum.get() + offset);
+			LOG1("\n");
+
+			hum->setVal(mySensor_hum.get() + offset);
+		}
+
+	} // loop
+};
+
+#endif
+
 // HELPER FUNCTIONS
 
 void detect_mhz() {
@@ -309,7 +472,8 @@ void initAnimation() {
 
 // Function for setting brightness based on light sensor values
 int neopixelAutoBrightness() {
-	double sensorValue = analogRead(ANALOG_PIN);
+	int sensorValue = analogRead(ANALOG_PIN);
+	// WEBLOG("Lightness: %d", sensorValue);
 	// print the readings in the Serial Monitor
 	Serial.println(sensorValue);
 
@@ -318,4 +482,11 @@ int neopixelAutoBrightness() {
 	} else {
 		return BRIGHTNESS_MAX;
 	}
+}
+
+// return raw sensor value
+double getBrightness() {
+	double sensorValue = analogRead(ANALOG_PIN);
+	WEBLOG("Lightness: %f", sensorValue);
+	return sensorValue;
 }

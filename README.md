@@ -1,6 +1,8 @@
 # ESP32 HomeKit Air Quality Sensor
 Native Apple HomeKit via ESP32 for the IKEA VINDRIKTNING PM2.5 Air Quality sensor + MH-Z19B CO2 Sensor
 
+[![PlatformIO Build](https://github.com/oleksiikutuzov/esp32-homekit-air-quality/actions/workflows/build.yml/badge.svg)](https://github.com/oleksiikutuzov/esp32-homekit-air-quality/actions/workflows/build.yml)
+
 The modification doesn't interfere with the VINDRIKTNING device itself. It just reads out data and passes it to HomeKit using ESP32.
 
 This Firmware is a Frankenstein Monster built of some other IKEA VINDRIKTNING projects from kasik96, Hypfer and ESP32 HomeKit implementation from HomeSpan.

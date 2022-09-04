@@ -34,14 +34,14 @@
  *                ╠═════════════════════════════╣
  *            +++ ║GND                       GND║ +++
  *            +++ ║3.3V                     IO23║ USED_FOR_NOTHING
- *                ║                         IO22║
+ *                ║                         IO22║ SCL
  *                ║IO36                      IO1║ TX
  *                ║IO39                      IO3║ RX
- *                ║IO34                     IO21║
- *                ║IO35                         ║ NC
+ *                ║IO34                     IO21║ SDA
+ *   LIGHT_SENSOR ║IO35                         ║ NC
  *        RED_LED ║IO32                     IO19║ MHZ TX
  *                ║IO33                     IO18║ MHZ RX
- *   LIGHT_SENSOR ║IO25                      IO5║
+ *                ║IO25                      IO5║
  *     LED_YELLOW ║IO26                     IO17║
  *                ║IO27                     IO16║ NEOPIXEL
  *   VINDRIKTNING ║IO14                      IO4║
@@ -49,7 +49,7 @@
  *                ╚═════════════════════════════╝
  */
 
-#define REQUIRED VERSION(1, 5, 1)
+#define REQUIRED VERSION(1, 6, 0)
 
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
@@ -61,37 +61,65 @@
 #include <ErriezMHZ19B.h>
 #include <HomeSpan.h>
 #include <SoftwareSerial.h>
+#include "OTA.hpp"
 
-#define BUTTON_PIN				 0
-#define LED_STATUS_PIN			 26
-
-#define BOOT_REASON_MESSAGE_SIZE 150
+#define BUTTON_PIN	   0
+#define LED_STATUS_PIN 26
 
 WebServer server(80);
 
 DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
 DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
 
+extern "C++" bool needToWarmUp;
+
+void setupWeb();
+
+#if HARDWARE_VER == 4
+DEV_TemperatureSensor *TEMP;
+DEV_HumiditySensor	  *HUM;
+#endif
+
 void setup() {
 
 	Serial.begin(115200);
 
+	Serial.print("Active firmware version: ");
+	Serial.println(FirmwareVer);
+
+	String mode;
+#if HARDWARE_VER == 4
+	mode = "-V4 ";
+#else
+	mode = "-V3 ";
+#endif
+
+	String	   temp			  = FW_VERSION;
+	const char compile_date[] = __DATE__ " " __TIME__;
+	char	  *fw_ver		  = new char[temp.length() + 30];
+	strcpy(fw_ver, temp.c_str());
+	strcat(fw_ver, mode.c_str());
+	strcat(fw_ver, " (");
+	strcat(fw_ver, compile_date);
+	strcat(fw_ver, ")");
+
 	homeSpan.setControlPin(BUTTON_PIN);						   // Set button pin
 	homeSpan.setStatusPin(LED_STATUS_PIN);					   // Set status led pin
-	homeSpan.setLogLevel(0);								   // set log level
+	homeSpan.setLogLevel(1);								   // set log level
 	homeSpan.setPortNum(88);								   // change port number for HomeSpan so we can use port 80 for the Web Server
 	homeSpan.setStatusAutoOff(10);							   // turn off status led after 10 seconds of inactivity
 	homeSpan.setWifiCallback(setupWeb);						   // need to start Web Server after WiFi is established
 	homeSpan.reserveSocketConnections(3);					   // reserve 3 socket connections for Web Server
 	homeSpan.enableWebLog(10, "pool.ntp.org", "UTC", "myLog"); // enable Web Log
 	homeSpan.enableAutoStartAP();							   // enable auto start AP
+	homeSpan.setSketchVersion(fw_ver);
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
-	new Characteristic::FirmwareRevision("1.3");
+	new Characteristic::FirmwareRevision(temp.c_str());
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
@@ -104,33 +132,72 @@ void setup() {
 	new Characteristic::Identify();
 	new Characteristic::Name("Air Quality Sensor");
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
+
+#if HARDWARE_VER == 4
+	new SpanAccessory();
+	new Service::AccessoryInformation();
+	new Characteristic::Identify();
+	new Characteristic::Name("Temperature Sensor");
+	TEMP = new DEV_TemperatureSensor(); // Create a Temperature Sensor (see DEV_Sensors.h for definition)
+
+	new SpanAccessory();
+	new Service::AccessoryInformation();
+	new Characteristic::Identify();
+	new Characteristic::Name("Humidity Sensor");
+	HUM = new DEV_HumiditySensor(); // Create a Temperature Sensor (see DEV_Sensors.h for definition)
+#endif
 }
 
 void loop() {
 	homeSpan.poll();
 	server.handleClient();
+	repeatedCall();
 }
 
 void setupWeb() {
-	Serial.print("Starting Air Quality Sensor Server Hub...\n\n");
+	LOG0("Starting Air Quality Sensor Server Hub...\n\n");
 
 	server.on("/metrics", HTTP_GET, []() {
-		double airQuality = AQI->pm25->getVal();
-		double co2		  = CO2->co2Level->getVal();
-		if (co2 >= 400) { // exclude when it is still warming up
-			// double lightness		= neopixelAutoBrightness();
-			double uptime			= esp_timer_get_time() / (6 * 10e6);
-			double heap				= esp_get_free_heap_size();
-			String airQualityMetric = "# HELP air_quality PM2.5 Density\nhomekit_air_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
-			String CO2Metric		= "# HELP co2 Carbon Dioxide\nhomekit_carbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
-			String uptimeMetric		= "# HELP uptime Sensor uptime\nhomekit_uptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
-			String heapMetric		= "# HELP heap Available heap memory\nhomekit_heap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
-			// String lightnessMetric	= "# HELP lightness Lightness\nlightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
-			Serial.println(airQualityMetric);
-			Serial.println(CO2Metric);
-			Serial.println(uptimeMetric);
-			Serial.println(heapMetric);
-			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric);
+		float airQuality = AQI->pm25->getVal();
+		float co2		 = CO2->co2Level->getVal();
+#if HARDWARE_VER == 4
+		float temp = TEMP->temp->getVal<float>();
+		float hum  = HUM->hum->getVal<float>();
+#endif
+		int	   lightness		= neopixelAutoBrightness();
+		float  uptime			= esp_timer_get_time() / (6 * 10e6);
+		float  heap				= esp_get_free_heap_size();
+		String airQualityMetric = "# HELP air_quality PM2.5 Density\nhomekit_air_quality{device=\"air_sensor\",location=\"home\"} " + String(airQuality);
+		String CO2Metric		= "# HELP co2 Carbon Dioxide\nhomekit_carbon_dioxide{device=\"air_sensor\",location=\"home\"} " + String(co2);
+		String uptimeMetric		= "# HELP uptime Sensor uptime\nhomekit_uptime{device=\"air_sensor\",location=\"home\"} " + String(int(uptime));
+		String heapMetric		= "# HELP heap Available heap memory\nhomekit_heap{device=\"air_sensor\",location=\"home\"} " + String(int(heap));
+		String lightnessMetric	= "# HELP lightness Lightness\nhomekit_lightness{device=\"air_sensor\",location=\"home\"} " + String(lightness);
+#if HARDWARE_VER == 4
+		String tempMetric = "# HELP temp Temperature\nhomekit_temperature{device=\"air_sensor\",location=\"home\"} " + String(temp);
+		String humMetric  = "# HELP hum Relative Humidity\nhomekit_humidity{device=\"air_sensor\",location=\"home\"} " + String(hum);
+#endif
+		LOG1(airQualityMetric);
+		LOG1(CO2Metric);
+		LOG1(uptimeMetric);
+		LOG1(heapMetric);
+		LOG1(lightnessMetric);
+#if HARDWARE_VER == 4
+		LOG1(tempMetric);
+		LOG1(humMetric);
+#endif
+		if (needToWarmUp == 0) { // exclude co2 and air quality if it is still warming up
+#if HARDWARE_VER == 4
+			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric + "\n" + tempMetric + "\n" + humMetric);
+#else
+			server.send(200, "text/plain", airQualityMetric + "\n" + CO2Metric + "\n" + uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric);
+#endif
+		} else {
+#if HARDWARE_VER == 4
+			server.send(200, "text/plain", uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric + "\n" + tempMetric + "\n" + humMetric);
+#else
+			server.send(200, "text/plain", uptimeMetric + "\n" + heapMetric + "\n" + lightnessMetric);
+
+#endif
 		}
 	});
 
