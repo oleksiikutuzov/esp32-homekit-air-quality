@@ -1,48 +1,64 @@
-name: Build sketch
+name: PlatformIO Build
+
 on: [push, pull_request]
+
 jobs:
-  build:
-    name: Compile sketch for esp32
+  build_v3:
+
+    name: Build V3
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Run PlatformIO
+      run: pio run -e esp32dev_v3
 
-      - name: Checkout ElegantOTA library
-        uses: actions/checkout@v2
-        with:
-          repository: ayushsharma82/ElegantOTA
-          ref: master
-          path: CustomElegantOTA
+  build_v4:
 
-      - name: Checkout ErriezMHZ19B library
-        uses: actions/checkout@v2
-        with:
-          repository: Erriez/ErriezMHZ19B
-          ref: master
-          path: CustomErriezMHZ19B
+    name: Build V4
+    runs-on: ubuntu-latest
 
-      - name: Checkout Adafruit_NeoPixel library
-        uses: actions/checkout@v2
-        with:
-          repository: adafruit/Adafruit_NeoPixel
-          ref: master
-          path: CustomAdafruit_NeoPixel
-
-      - name: Checkout Smoothed library
-        uses: actions/checkout@v2
-        with:
-          repository: MattFryer/Smoothed
-          ref: master
-          path: CustomSmoothed
-
-      - name: "Compile sketch"
-        uses: ArminJo/arduino-test-compile@v3
-        with:
-          sketch-names: "air_quality.ino"
-          arduino-board-fqbn: "esp32:esp32:esp32:PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=115200,LoopCore=1,EventsCore=0,DebugLevel=none"
-          platform-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-          required-libraries: HomeSpan,EspSoftwareSerial
-          # sketches-exclude: WhistleSwitch 50Hz
-          # build-properties: '{ "air_quality": "-DDEBUG -DFREQUENCY_RANGE_LOW", "SimpleFrequencyDetector": "-DINFO" }'
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Run PlatformIO
+      run: pio run -e esp32dev_v4

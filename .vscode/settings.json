@@ -1,20 +1,35 @@
 {
-    "cSpell.words": [
-        "Adafruit",
-        "Berman",
-        "Erriez",
-        "Grafana",
-        "haxfleisch",
-        "HOMEKIT",
-        "homespan",
-        "Hypfer",
-        "kasik",
-        "microcontroller",
-        "NEOPIXEL",
-        "nhomekit",
-        "Testpoint",
-        "VINDRIKTNING",
-        "webserver",
-        "Wemos"
-    ]
+	"cSpell.words": [
+		"Adafruit",
+		"arduinoespressif",
+		"ayushsharma",
+		"Berman",
+		"cels",
+		"Erriez",
+		"featherfly",
+		"fwurl",
+		"Grafana",
+		"haxfleisch",
+		"HOMEKIT",
+		"homespan",
+		"Hypfer",
+		"kasik",
+		"lockfiles",
+		"mattfryer",
+		"microcontroller",
+		"Millis",
+		"NEOPIXEL",
+		"nhomekit",
+		"NUMPIXELS",
+		"platformio",
+		"plerup",
+		"Testpoint",
+		"VINDRIKTNING",
+		"webserver",
+		"Wemos"
+	],
+	"arduino.path": "/Applications", // /usr/local/bin/
+	"arduino.commandPath": "Contents/MacOS/Arduino", // arduino-cli
+	"arduino.useArduinoCli": false,
+	"arduino.defaultTimestampFormat": "[%H:%M:%S] "
 }

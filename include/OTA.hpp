@@ -2,13 +2,17 @@
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
 #include <WiFiClientSecure.h>
-#include "cert.h"
+#include "cert.hpp"
 #include <HomeSpan.h>
 
 #define URL_fw_Version "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/bin_version.txt"
-#define URL_fw_Bin	   "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/esp32_air_quality.bin"
 
-#define FW_VERSION	   "1.4.2"
+#if HARDWARE_VER == 4
+#define URL_fw_Bin "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/esp32_air_quality_v4.bin"
+#else
+#define URL_fw_Bin "https://raw.githubusercontent.com/oleksiikutuzov/esp32-homekit-air-quality/V4.0/esp32_air_quality_v3.bin"
+#endif
+#define FW_VERSION "1.4.2"
 
 String FirmwareVer = {
 	FW_VERSION};
@@ -16,8 +20,8 @@ String FirmwareVer = {
 void firmwareUpdate();
 int	 FirmwareVersionCheck();
 
-unsigned long previousMillis = 0; // will store last time LED was updated
-const long	  interval		 = 60000;
+unsigned long previousMillis = 0;			   // will store last time LED was updated
+const long	  interval		 = 60 * 60 * 1000; // 1 hour in ms
 
 void repeatedCall() {
 	static int	  num			= 0;

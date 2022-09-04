@@ -73,6 +73,8 @@ DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
 
 extern "C++" bool needToWarmUp;
 
+void setupWeb();
+
 #if HARDWARE_VER == 4
 DEV_TemperatureSensor *TEMP;
 DEV_HumiditySensor	  *HUM;
@@ -85,10 +87,18 @@ void setup() {
 	Serial.print("Active firmware version: ");
 	Serial.println(FirmwareVer);
 
+	String mode;
+#if HARDWARE_VER == 4
+	mode = "-V4 ";
+#else
+	mode = "-V3 ";
+#endif
+
 	String	   temp			  = FW_VERSION;
 	const char compile_date[] = __DATE__ " " __TIME__;
 	char	  *fw_ver		  = new char[temp.length() + 30];
 	strcpy(fw_ver, temp.c_str());
+	strcat(fw_ver, mode.c_str());
 	strcat(fw_ver, " (");
 	strcat(fw_ver, compile_date);
 	strcat(fw_ver, ")");

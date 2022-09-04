@@ -22,7 +22,9 @@
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
 #define SMOOTHING_COEFF		 10	  // Number of elements in the vector of previous values
 
-#define HARDWARE_VER		 4
+#ifndef HARDWARE_VER
+#define HARDWARE_VER 4
+#endif
 
 bool				  needToWarmUp	= true;
 bool				  playInitAnim	= true;
@@ -81,7 +83,9 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 		mhzSerial.begin(9600);
 
-		// detect_mhz(); //! uncomment
+#if HARDWARE_VER != 4
+		detect_mhz();
+#endif
 
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
