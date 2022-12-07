@@ -49,19 +49,19 @@
  *                ╚═════════════════════════════╝
  */
 
-#define REQUIRED VERSION(1, 6, 0)
+#define REQUIRED   VERSION(1, 6, 0)
+#define FW_VERSION "1.5.0"
 
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
 #include "Types.hpp"
 #include <Adafruit_NeoPixel.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
 #include <ElegantOTA.h>
 #include <ErriezMHZ19B.h>
 #include <HomeSpan.h>
 #include <SoftwareSerial.h>
-#include "OTA.hpp"
+#include <WebServer.h>
+#include <WiFiClient.h>
 
 #define BUTTON_PIN	   0
 #define LED_STATUS_PIN 26
@@ -85,7 +85,7 @@ void setup() {
 	Serial.begin(115200);
 
 	Serial.print("Active firmware version: ");
-	Serial.println(FirmwareVer);
+	Serial.println(FW_VERSION);
 
 	String mode;
 #if HARDWARE_VER == 4
@@ -114,23 +114,15 @@ void setup() {
 	homeSpan.enableAutoStartAP();							   // enable auto start AP
 	homeSpan.setSketchVersion(fw_ver);
 
-	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
+	homeSpan.begin(Category::Sensors, "HomeSpan Air Sensor");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
+	// new Characteristic::Name("Carbon Dioxide Sensor");
 	new Characteristic::FirmwareRevision(temp.c_str());
-
-	new SpanAccessory();
-	new Service::AccessoryInformation();
-	new Characteristic::Identify();
-	new Characteristic::Name("Carbon Dioxide Sensor");
 	CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
 
-	new SpanAccessory();
-	new Service::AccessoryInformation();
-	new Characteristic::Identify();
-	new Characteristic::Name("Air Quality Sensor");
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 
 #if HARDWARE_VER == 4
@@ -151,7 +143,6 @@ void setup() {
 void loop() {
 	homeSpan.poll();
 	server.handleClient();
-	repeatedCall();
 }
 
 void setupWeb() {
