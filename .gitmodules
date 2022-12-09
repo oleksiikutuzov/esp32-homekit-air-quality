@@ -1,6 +1,0 @@
-[submodule "lib/HomeSpan"]
-	path = lib/HomeSpan
-	url = https://github.com/oleksiikutuzov/HomeSpan
-[submodule "lib/ErriezMHZ19B"]
-	path = lib/ErriezMHZ19B
-	url = https://github.com/Erriez/ErriezMHZ19B
