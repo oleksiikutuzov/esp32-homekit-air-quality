@@ -1,10 +1,10 @@
-#include <HomeSpan.h>
-#include <SoftwareSerial.h>
-#include <ErriezMHZ19B.h>
-#include <Adafruit_NeoPixel.h>
 #include "SerialCom.hpp"
 #include "Types.hpp"
+#include <Adafruit_NeoPixel.h>
+#include <ErriezMHZ19B.h>
+#include <HomeSpan.h>
 #include <Smoothed.h>
+#include <SoftwareSerial.h>
 
 // I2C for temp sensor
 #include <Wire.h>
@@ -65,16 +65,34 @@ CUSTOM_CHAR(OffsetHumidity, 00000002-0001-0001-0001-46637266EA00, PR + PW + EV, 
 // clang-format on
 #endif
 
-struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperature sensor
+struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Quality sensor
 
-	SpanCharacteristic *co2Detected;
+	// An Air Quality Sensor is similar to a Temperature Sensor except that it supports a wide variety of measurements.
+	// We will use three of them.  The first is required, the second two are optional.
+
+	SpanCharacteristic *airQuality; // reference to the Air Quality Characteristic, which is an integer from 0 to 5
+	SpanCharacteristic *pm25;
+	// SpanCharacteristic *airQualityActive;
+
+	// SpanCharacteristic *co2Detected;
 	SpanCharacteristic *co2Level;
 	SpanCharacteristic *co2PeakLevel;
 	SpanCharacteristic *co2StatusActive;
 
-	DEV_CO2Sensor() : Service::CarbonDioxideSensor() { // constructor() method
+	DEV_AirQualitySensor() : Service::AirQualitySensor() { // constructor() method
 
-		co2Detected		= new Characteristic::CarbonDioxideDetected(false);
+		airQuality = new Characteristic::AirQuality(1); // instantiate the Air Quality Characteristic and set initial value to 1
+		pm25	   = new Characteristic::PM25Density(0);
+		// airQualityActive = new Characteristic::StatusActive(false);
+
+		Serial.print("Configuring Air Quality Sensor"); // initialization message
+		Serial.print("\n");
+
+		SerialCom::setup();
+
+		mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
+
+		// co2Detected		= new Characteristic::CarbonDioxideDetected(false);
 		co2Level		= new Characteristic::CarbonDioxideLevel(400);
 		co2PeakLevel	= new Characteristic::CarbonDioxidePeakLevel(400);
 		co2StatusActive = new Characteristic::StatusActive(false);
@@ -83,9 +101,7 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 
 		mhzSerial.begin(9600);
 
-#if HARDWARE_VER != 4
 		detect_mhz();
-#endif
 
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
@@ -94,10 +110,44 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 		pixels.setBrightness(50);
 		pixels.show();
 
-		mySensor_co2.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
-	}
+		mySensor_co2.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_
+
+	} // end constructor
 
 	void loop() {
+
+		if (pm25->timeVal() > INTERVAL * 1000) { // modify the Air Quality Characteristic every 5 seconds
+
+			SerialCom::handleUart(state);
+
+			if (state.valid) {
+
+				// if (!airQualityAct) {
+				// 	airQualityActive->setVal(true);
+				// 	airQualityAct = true;
+				// }
+
+				mySensor_air.add(state.avgPM25);
+
+				pm25->setVal(mySensor_air.get());
+
+				int airQualityVal = 0;
+
+				// Set Air Quality level based on PM2.5 value
+				if (state.avgPM25 >= 150) {
+					airQualityVal = 5;
+				} else if (state.avgPM25 >= 55) {
+					airQualityVal = 4;
+				} else if (state.avgPM25 >= 35) {
+					airQualityVal = 3;
+				} else if (state.avgPM25 >= 12) {
+					airQualityVal = 2;
+				} else if (state.avgPM25 >= 0) {
+					airQualityVal = 1;
+				}
+				airQuality->setVal(airQualityVal);
+			}
+		}
 
 		if (playInitAnim) {
 			Serial.println("Init animation");
@@ -177,79 +227,11 @@ struct DEV_CO2Sensor : Service::CarbonDioxideSensor { // A standalone Temperatur
 				if (co2_value > co2PeakLevel->getVal()) {
 					co2PeakLevel->setVal(co2_value);
 				}
-
-				// Trigger HomeKit sensor when concentration reaches this level
-				if (co2_value > HOMEKIT_CO2_TRIGGER) {
-					co2Detected->setVal(true);
-				} else {
-					co2Detected->setVal(false);
-				}
 			}
 		}
 
 		if (co2Level->timeVal() > 12 * 60 * 60 * 1000) {
 			co2PeakLevel->setVal(400);
-		}
-	}
-};
-
-struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Quality sensor
-
-	// An Air Quality Sensor is similar to a Temperature Sensor except that it supports a wide variety of measurements.
-	// We will use three of them.  The first is required, the second two are optional.
-
-	SpanCharacteristic *airQuality; // reference to the Air Quality Characteristic, which is an integer from 0 to 5
-	SpanCharacteristic *pm25;
-	SpanCharacteristic *airQualityActive;
-
-	DEV_AirQualitySensor() : Service::AirQualitySensor() { // constructor() method
-
-		airQuality		 = new Characteristic::AirQuality(1); // instantiate the Air Quality Characteristic and set initial value to 1
-		pm25			 = new Characteristic::PM25Density(0);
-		airQualityActive = new Characteristic::StatusActive(false);
-
-		Serial.print("Configuring Air Quality Sensor"); // initialization message
-		Serial.print("\n");
-
-		SerialCom::setup();
-
-		mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
-
-	} // end constructor
-
-	void loop() {
-
-		if (pm25->timeVal() > INTERVAL * 1000) { // modify the Air Quality Characteristic every 5 seconds
-
-			SerialCom::handleUart(state);
-
-			if (state.valid) {
-
-				if (!airQualityAct) {
-					airQualityActive->setVal(true);
-					airQualityAct = true;
-				}
-
-				mySensor_air.add(state.avgPM25);
-
-				pm25->setVal(mySensor_air.get());
-
-				int airQualityVal = 0;
-
-				// Set Air Quality level based on PM2.5 value
-				if (state.avgPM25 >= 150) {
-					airQualityVal = 5;
-				} else if (state.avgPM25 >= 55) {
-					airQualityVal = 4;
-				} else if (state.avgPM25 >= 35) {
-					airQualityVal = 3;
-				} else if (state.avgPM25 >= 12) {
-					airQualityVal = 2;
-				} else if (state.avgPM25 >= 0) {
-					airQualityVal = 1;
-				}
-				airQuality->setVal(airQualityVal);
-			}
 		}
 
 	} // loop

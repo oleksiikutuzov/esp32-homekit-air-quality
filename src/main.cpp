@@ -49,26 +49,27 @@
  *                ╚═════════════════════════════╝
  */
 
-#define REQUIRED VERSION(1, 6, 0)
+#define REQUIRED   VERSION(1, 6, 0)
+#define FW_VERSION "1.5.0"
 
+#include "Arduino.h"
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
 #include "Types.hpp"
 #include <Adafruit_NeoPixel.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
 #include <ElegantOTA.h>
 #include <ErriezMHZ19B.h>
 #include <HomeSpan.h>
 #include <SoftwareSerial.h>
-#include "OTA.hpp"
+#include <WebServer.h>
+#include <WiFiClient.h>
 
 #define BUTTON_PIN	   0
 #define LED_STATUS_PIN 26
 
 WebServer server(80);
 
-DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
+// DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
 DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
 
 extern "C++" bool needToWarmUp;
@@ -85,7 +86,7 @@ void setup() {
 	Serial.begin(115200);
 
 	Serial.print("Active firmware version: ");
-	Serial.println(FirmwareVer);
+	Serial.println(FW_VERSION);
 
 	String mode;
 #if HARDWARE_VER == 4
@@ -103,34 +104,35 @@ void setup() {
 	strcat(fw_ver, compile_date);
 	strcat(fw_ver, ")");
 
-	homeSpan.setControlPin(BUTTON_PIN);						   // Set button pin
-	homeSpan.setStatusPin(LED_STATUS_PIN);					   // Set status led pin
-	homeSpan.setLogLevel(1);								   // set log level
-	homeSpan.setPortNum(88);								   // change port number for HomeSpan so we can use port 80 for the Web Server
-	homeSpan.setStatusAutoOff(10);							   // turn off status led after 10 seconds of inactivity
-	homeSpan.setWifiCallback(setupWeb);						   // need to start Web Server after WiFi is established
-	homeSpan.reserveSocketConnections(3);					   // reserve 3 socket connections for Web Server
-	homeSpan.enableWebLog(10, "pool.ntp.org", "UTC", "myLog"); // enable Web Log
-	homeSpan.enableAutoStartAP();							   // enable auto start AP
+	homeSpan.setControlPin(BUTTON_PIN);							 // Set button pin
+	homeSpan.setStatusPin(LED_STATUS_PIN);						 // Set status led pin
+	homeSpan.setLogLevel(1);									 // set log level
+	homeSpan.setPortNum(88);									 // change port number for HomeSpan so we can use port 80 for the Web Server
+	homeSpan.setStatusAutoOff(10);								 // turn off status led after 10 seconds of inactivity
+	homeSpan.setWifiCallback(setupWeb);							 // need to start Web Server after WiFi is established
+	homeSpan.reserveSocketConnections(3);						 // reserve 3 socket connections for Web Server
+	homeSpan.enableWebLog(10, "pool.ntp.org", "UTC-1", "myLog"); // enable Web Log
+	homeSpan.enableAutoStartAP();								 // enable auto start AP
 	homeSpan.setSketchVersion(fw_ver);
 
 	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
 
-	new SpanAccessory();
-	new Service::AccessoryInformation();
-	new Characteristic::Identify();
-	new Characteristic::FirmwareRevision(temp.c_str());
+	// new SpanAccessory();
+	// new Service::AccessoryInformation();
+	// new Characteristic::Identify();
+	// new Characteristic::FirmwareRevision(temp.c_str());
 
-	new SpanAccessory();
-	new Service::AccessoryInformation();
-	new Characteristic::Identify();
-	new Characteristic::Name("Carbon Dioxide Sensor");
-	CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
+	// new SpanAccessory();
+	// new Service::AccessoryInformation();
+	// new Characteristic::Identify();
+	// new Characteristic::Name("Carbon Dioxide Sensor");
+	// CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
 	new Characteristic::Name("Air Quality Sensor");
+	new Characteristic::FirmwareRevision(temp.c_str());
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 
 #if HARDWARE_VER == 4
@@ -151,7 +153,6 @@ void setup() {
 void loop() {
 	homeSpan.poll();
 	server.handleClient();
-	repeatedCall();
 }
 
 void setupWeb() {
@@ -159,7 +160,7 @@ void setupWeb() {
 
 	server.on("/metrics", HTTP_GET, []() {
 		float airQuality = AQI->pm25->getVal();
-		float co2		 = CO2->co2Level->getVal();
+		float co2		 = AQI->co2Level->getVal();
 #if HARDWARE_VER == 4
 		float temp = TEMP->temp->getVal<float>();
 		float hum  = HUM->hum->getVal<float>();
