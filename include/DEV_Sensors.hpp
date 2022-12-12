@@ -1,6 +1,6 @@
 #include "SerialCom.hpp"
 #include "Types.hpp"
-#include <Adafruit_NeoPixel.h>
+#include "extras/Pixel.h"
 #include <ErriezMHZ19B.h>
 #include <HomeSpan.h>
 #include <Smoothed.h>
@@ -17,13 +17,18 @@
 #define NEOPIXEL_PIN		 16	  // Pin to which NeoPixel strip is connected
 #define NUMPIXELS			 1	  // Number of pixels
 #define BRIGHTNESS_DEFAULT	 9	  // Default (dimmed) brightness
-#define BRIGHTNESS_MAX		 150  // maximum brightness of CO2 indicator led
+#define BRIGHTNESS_MAX		 50	  // maximum brightness of CO2 indicator led
 #define BRIGHTNESS_THRESHOLD 500  // TODO calibrate Threshold value of dimmed brightness
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
 #define SMOOTHING_COEFF		 10	  // Number of elements in the vector of previous values
 
+#define NEOPIXEL_PIN		 16 // NeoPixel pin
+#define RED_HUE				 0
+#define ORANGE_HUE			 35
+#define GREEN_HUE			 120
+
 #ifndef HARDWARE_VER
-#define HARDWARE_VER 4
+#define HARDWARE_VER 3
 #endif
 
 bool				  needToWarmUp	= true;
@@ -37,10 +42,11 @@ Smoothed<float>		  mySensor_temp;
 Smoothed<float>		  mySensor_hum;
 
 // Declare functions
-void   detect_mhz();
-void   fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration);
-void   fadeOut(int pixel, int r, int g, int b, double duration);
-void   initAnimation();
+void   detect_mhz(Pixel *pixel);
+void   fadeIn(Pixel *pixel, int h, int s, int v, double duration);
+void   fadeIn(Pixel *pixel, int h, int s, int v, int brightnessOverride, double duration);
+void   fadeOut(Pixel *pixel, int h, int s, int v, double duration);
+void   initAnimation(Pixel *pixel);
 int	   neopixelAutoBrightness();
 double getBrightness();
 
@@ -53,9 +59,6 @@ SoftwareSerial mhzSerial(MHZ19B_TX_PIN, MHZ19B_RX_PIN);
 
 // Declare MHZ19B object
 ErriezMHZ19B mhz19b(&mhzSerial);
-
-// Create Neopixel object
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 #if HARDWARE_VER == 4
 // Custom characteristics
@@ -72,18 +75,17 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 	SpanCharacteristic *airQuality; // reference to the Air Quality Characteristic, which is an integer from 0 to 5
 	SpanCharacteristic *pm25;
-	// SpanCharacteristic *airQualityActive;
 
-	// SpanCharacteristic *co2Detected;
 	SpanCharacteristic *co2Level;
 	SpanCharacteristic *co2PeakLevel;
 	SpanCharacteristic *co2StatusActive;
+
+	Pixel *pixel;
 
 	DEV_AirQualitySensor() : Service::AirQualitySensor() { // constructor() method
 
 		airQuality = new Characteristic::AirQuality(1); // instantiate the Air Quality Characteristic and set initial value to 1
 		pm25	   = new Characteristic::PM25Density(0);
-		// airQualityActive = new Characteristic::StatusActive(false);
 
 		Serial.print("Configuring Air Quality Sensor"); // initialization message
 		Serial.print("\n");
@@ -92,7 +94,6 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 		mySensor_air.begin(SMOOTHED_AVERAGE, 4); // SMOOTHED_AVERAGE, SMOOTHED_EXPONENTIAL options
 
-		// co2Detected		= new Characteristic::CarbonDioxideDetected(false);
 		co2Level		= new Characteristic::CarbonDioxideLevel(400);
 		co2PeakLevel	= new Characteristic::CarbonDioxidePeakLevel(400);
 		co2StatusActive = new Characteristic::StatusActive(false);
@@ -101,14 +102,12 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 		mhzSerial.begin(9600);
 
-		detect_mhz();
+		pixel = new Pixel(NEOPIXEL_PIN); // creates RGB/RGBW pixel LED on specified pin using default timing parameters suitable for most SK68xx LEDs
+
+		detect_mhz(pixel);
 
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
-
-		pixels.begin();
-		pixels.setBrightness(50);
-		pixels.show();
 
 		mySensor_co2.begin(SMOOTHED_EXPONENTIAL, SMOOTHING_COEFF); // SMOOTHED_AVERAGE, SMOOTHED_
 
@@ -121,11 +120,6 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 			SerialCom::handleUart(state);
 
 			if (state.valid) {
-
-				// if (!airQualityAct) {
-				// 	airQualityActive->setVal(true);
-				// 	airQualityAct = true;
-				// }
 
 				mySensor_air.add(state.avgPM25);
 
@@ -151,7 +145,7 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 		if (playInitAnim) {
 			Serial.println("Init animation");
-			initAnimation();
+			initAnimation(pixel);
 			playInitAnim = false;
 		}
 
@@ -159,13 +153,15 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 			// Serial.println("Need to warm up");
 
 			if (mhz19b.isWarmingUp()) {
+				int duration = 1500;
 				Serial.println("Warming up");
-				pixels.setPixelColor(0, pixels.Color(255, 165, 0));
-				pixels.setBrightness(neopixelAutoBrightness());
-				pixels.show();
-				delay(2.5 * 1000);
-				pixels.setPixelColor(0, pixels.Color(0, 0, 0));
-				pixels.show();
+
+				fadeIn(pixel, ORANGE_HUE, 100, BRIGHTNESS_MAX, duration);
+				delay(1 * 1000);
+
+				fadeOut(pixel, ORANGE_HUE, 100, BRIGHTNESS_MAX, duration);
+				delay(1 * 1000);
+
 				tick = tick + 5;
 				Serial.println((String)tick + " ");
 				co2StatusActive->setVal(false);
@@ -205,22 +201,13 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 				// 1000+        -> red
 				if (co2_value >= 1000) {
 					LOG1("Red color\n");
-					pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // red color
-					// pixels.setBrightness(BRIGHTNESS_DEFAULT);
-					pixels.setBrightness(neopixelAutoBrightness());
-					pixels.show();
+					pixel->set(Pixel::Color().HSV(RED_HUE, 100, BRIGHTNESS_MAX));
 				} else if (co2_value >= 800) {
 					LOG1("Yellow color\n");
-					pixels.setPixelColor(0, pixels.Color(255, 127, 0)); // orange color
-					// pixels.setBrightness(BRIGHTNESS_DEFAULT);
-					pixels.setBrightness(neopixelAutoBrightness());
-					pixels.show();
+					pixel->set(Pixel::Color().HSV(ORANGE_HUE, 100, BRIGHTNESS_MAX));
 				} else if (co2_value >= 400) {
 					LOG1("Green color\n");
-					pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // green color
-					// pixels.setBrightness(BRIGHTNESS_DEFAULT);
-					pixels.setBrightness(neopixelAutoBrightness());
-					pixels.show();
+					pixel->set(Pixel::Color().HSV(GREEN_HUE, 100, BRIGHTNESS_MAX));
 				}
 
 				// Update peak value
@@ -381,75 +368,70 @@ struct DEV_HumiditySensor : Service::HumiditySensor { // A standalone Air Qualit
 
 // HELPER FUNCTIONS
 
-void detect_mhz() {
+void detect_mhz(Pixel *pixel) {
+	int duration = 1000;
+
 	// Detect sensor
 	Serial.println("Detecting MH-Z19B");
 	while (!mhz19b.detect()) {
-		pixels.setPixelColor(0, pixels.Color(255, 0, 0));
-		pixels.setBrightness(BRIGHTNESS_DEFAULT);
-		delay(2.5 * 1000);
-		pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+		fadeIn(pixel, RED_HUE, 100, BRIGHTNESS_MAX, duration);
+		delay(1 * 1000);
+
+		fadeOut(pixel, RED_HUE, 100, BRIGHTNESS_MAX, duration);
+		delay(1 * 1000);
 	};
 	Serial.println("Sensor detected!");
 }
 
 // Fade in to pre-defined color
-void fadeIn(int pixel, int r, int g, int b, double duration) {
-	int brightness = neopixelAutoBrightness();
+void fadeIn(Pixel *pixel, int h, int s, int v, double duration) {
+	int brightness = v;
 	for (int i = 0; i < brightness; i++) {
-		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
-		pixels.setBrightness(i);
-		pixels.show();
+		pixel->set(Pixel::Color().HSV(h, s, i));
 		delay(duration / brightness);
 	}
 }
 
 // Fade in to pre-defined color
-void fadeIn(int pixel, int r, int g, int b, int brightnessOverride, double duration) {
+void fadeIn(Pixel *pixel, int h, int s, int v, int brightnessOverride, double duration) {
 	int brightness = brightnessOverride;
 	for (int i = 0; i < brightness; i++) {
-		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
-		pixels.setBrightness(i);
-		pixels.show();
+		pixel->set(Pixel::Color().HSV(h, s, i));
 		delay(duration / brightness);
 	}
 }
 
 // Fade out from pre-defined color
-void fadeOut(int pixel, int r, int g, int b, double duration) {
-	int currentBrightness = pixels.getBrightness();
+void fadeOut(Pixel *pixel, int h, int s, int v, double duration) {
+	int currentBrightness = v;
 	for (int i = 0; i < currentBrightness; i++) {
-		pixels.setPixelColor(pixel, pixels.Color(r, g, b));
-		pixels.setBrightness(currentBrightness - i);
-		pixels.show();
+		pixel->set(Pixel::Color().HSV(h, s, v - i - 1));
 		delay(duration / currentBrightness);
 	}
-	pixels.setPixelColor(pixel, pixels.Color(0, 0, 0));
-	pixels.show();
 }
 
-void initAnimation() {
+void initAnimation(Pixel *pixel) {
 	int duration   = 1000;
-	int brightness = BRIGHTNESS_DEFAULT;
+	int brightness = 20;
 	// green
-	fadeIn(0, 0, 255, 0, brightness, duration);
-	fadeOut(0, 0, 255, 0, duration);
+	fadeIn(pixel, GREEN_HUE, 100, brightness, duration);
+	fadeOut(pixel, GREEN_HUE, 100, brightness, duration);
 
 	// yellow
-	fadeIn(0, 255, 165, 0, brightness, duration);
-	fadeOut(0, 255, 165, 0, duration);
+	fadeIn(pixel, ORANGE_HUE, 100, brightness, duration);
+	fadeOut(pixel, ORANGE_HUE, 100, brightness, duration);
 
 	// red
-	fadeIn(0, 255, 0, 0, brightness, duration);
-	fadeOut(0, 255, 0, 0, duration);
+	fadeIn(pixel, RED_HUE, 100, brightness, duration);
+	fadeOut(pixel, RED_HUE, 100, brightness, duration);
 
 	// yellow
-	fadeIn(0, 255, 165, 0, brightness, duration);
-	fadeOut(0, 255, 165, 0, duration);
+	fadeIn(pixel, ORANGE_HUE, 100, brightness, duration);
+	fadeOut(pixel, ORANGE_HUE, 100, brightness, duration);
 
 	// green
-	fadeIn(0, 0, 255, 0, brightness, duration);
-	fadeOut(0, 0, 255, 0, duration);
+	fadeIn(pixel, GREEN_HUE, 100, brightness, duration);
+	fadeOut(pixel, GREEN_HUE, 100, brightness, duration);
 }
 
 // Function for setting brightness based on light sensor values

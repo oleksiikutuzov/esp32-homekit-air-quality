@@ -56,7 +56,6 @@
 #include "DEV_Sensors.hpp"
 #include "SerialCom.hpp"
 #include "Types.hpp"
-#include <Adafruit_NeoPixel.h>
 #include <ElegantOTA.h>
 #include <ErriezMHZ19B.h>
 #include <HomeSpan.h>
