@@ -69,7 +69,6 @@
 
 WebServer server(80);
 
-// DEV_CO2Sensor		 *CO2; // GLOBAL POINTER TO STORE SERVICE
 DEV_AirQualitySensor *AQI; // GLOBAL POINTER TO STORE SERVICE
 
 extern "C++" bool needToWarmUp;
@@ -115,23 +114,11 @@ void setup() {
 	homeSpan.enableAutoStartAP();								 // enable auto start AP
 	homeSpan.setSketchVersion(fw_ver);
 
-	homeSpan.begin(Category::Bridges, "HomeSpan Air Sensor Bridge");
-
-	// new SpanAccessory();
-	// new Service::AccessoryInformation();
-	// new Characteristic::Identify();
-	// new Characteristic::FirmwareRevision(temp.c_str());
-
-	// new SpanAccessory();
-	// new Service::AccessoryInformation();
-	// new Characteristic::Identify();
-	// new Characteristic::Name("Carbon Dioxide Sensor");
-	// CO2 = new DEV_CO2Sensor(); // Create a CO2 Sensor (see DEV_Sensors.h for definition)
+	homeSpan.begin(Category::Sensors, "HomeSpan Air Quality Sensor");
 
 	new SpanAccessory();
 	new Service::AccessoryInformation();
 	new Characteristic::Identify();
-	new Characteristic::Name("Air Quality Sensor");
 	new Characteristic::FirmwareRevision(temp.c_str());
 	AQI = new DEV_AirQualitySensor(); // Create an Air Quality Sensor (see DEV_Sensors.h for definition)
 
