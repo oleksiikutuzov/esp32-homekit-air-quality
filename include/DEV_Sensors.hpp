@@ -46,6 +46,7 @@ void   detect_mhz(Pixel *pixel);
 void   fadeIn(Pixel *pixel, int h, int s, int v, double duration);
 void   fadeIn(Pixel *pixel, int h, int s, int v, int brightnessOverride, double duration);
 void   fadeOut(Pixel *pixel, int h, int s, int v, double duration);
+void   fadeColor(Pixel *pixel, int old_hue, int new_hue, int v, double duration);
 void   initAnimation(Pixel *pixel);
 int	   neopixelAutoBrightness();
 double getBrightness();
@@ -81,6 +82,7 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 	SpanCharacteristic *co2StatusActive;
 
 	Pixel *pixel;
+	int	   current_hue = ORANGE_HUE;
 
 	DEV_AirQualitySensor() : Service::AirQualitySensor() { // constructor() method
 
@@ -105,6 +107,12 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 		pixel = new Pixel(NEOPIXEL_PIN); // creates RGB/RGBW pixel LED on specified pin using default timing parameters suitable for most SK68xx LEDs
 
 		detect_mhz(pixel);
+
+		// pixel->set(Pixel::Color().HSV(RED_HUE, 100, BRIGHTNESS_MAX));
+		// delay(2000);
+		// fade(pixel, GREEN_HUE, RED_HUE, BRIGHTNESS_MAX, 1000);
+		// pixel->set(Pixel::Color().HSV(GREEN_HUE, 100, BRIGHTNESS_MAX));
+		// delay(2000);
 
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
@@ -199,15 +207,18 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 				// 400 - 800    -> green
 				// 800 - 1000   -> yellow
 				// 1000+        -> red
-				if (co2_value >= 1000) {
+				if (co2Level->getVal() >= 1000) {
 					LOG1("Red color\n");
-					pixel->set(Pixel::Color().HSV(RED_HUE, 100, BRIGHTNESS_MAX));
-				} else if (co2_value >= 800) {
+					fadeColor(pixel, current_hue, RED_HUE, BRIGHTNESS_MAX, 1000);
+					current_hue = RED_HUE;
+				} else if (co2Level->getVal() >= 800) {
 					LOG1("Yellow color\n");
-					pixel->set(Pixel::Color().HSV(ORANGE_HUE, 100, BRIGHTNESS_MAX));
-				} else if (co2_value >= 400) {
+					fadeColor(pixel, current_hue, ORANGE_HUE, BRIGHTNESS_MAX, 1000);
+					current_hue = ORANGE_HUE;
+				} else if (co2Level->getVal() >= 400) {
 					LOG1("Green color\n");
-					pixel->set(Pixel::Color().HSV(GREEN_HUE, 100, BRIGHTNESS_MAX));
+					fadeColor(pixel, current_hue, GREEN_HUE, BRIGHTNESS_MAX, 1000);
+					current_hue = GREEN_HUE;
 				}
 
 				// Update peak value
@@ -407,6 +418,20 @@ void fadeOut(Pixel *pixel, int h, int s, int v, double duration) {
 	for (int i = 0; i < currentBrightness; i++) {
 		pixel->set(Pixel::Color().HSV(h, s, v - i - 1));
 		delay(duration / currentBrightness);
+	}
+}
+
+void fadeColor(Pixel *pixel, int old_hue, int new_hue, int v, double duration) {
+	if (new_hue > old_hue) {
+		for (int hue = old_hue; hue <= new_hue; hue++) {
+			pixel->set(Pixel::Color().HSV(hue, 100, v));
+			delay(duration / (new_hue - old_hue));
+		}
+	} else if (old_hue > new_hue) {
+		for (int hue = old_hue; hue >= new_hue; hue--) {
+			pixel->set(Pixel::Color().HSV(hue, 100, v));
+			delay(duration / (old_hue - new_hue));
+		}
 	}
 }
 
