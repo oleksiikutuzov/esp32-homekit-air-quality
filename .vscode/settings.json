@@ -31,5 +31,27 @@
 	"arduino.path": "/Applications", // /usr/local/bin/
 	"arduino.commandPath": "Contents/MacOS/Arduino", // arduino-cli
 	"arduino.useArduinoCli": false,
-	"arduino.defaultTimestampFormat": "[%H:%M:%S] "
+	"arduino.defaultTimestampFormat": "[%H:%M:%S] ",
+	"editor.tokenColorCustomizations": {
+		"textMateRules": [
+			{
+				"scope": "googletest.failed",
+				"settings": {
+					"foreground": "#f00"
+				}
+			},
+			{
+				"scope": "googletest.passed",
+				"settings": {
+					"foreground": "#0f0"
+				}
+			},
+			{
+				"scope": "googletest.run",
+				"settings": {
+					"foreground": "#0f0"
+				}
+			}
+		]
+	}
 }

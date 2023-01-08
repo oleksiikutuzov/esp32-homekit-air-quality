@@ -16,7 +16,7 @@
 #define HOMEKIT_CO2_TRIGGER	 1350 // co2 level, at which HomeKit alarm will be triggered
 #define NEOPIXEL_PIN		 16	  // Pin to which NeoPixel strip is connected
 #define NUMPIXELS			 1	  // Number of pixels
-#define BRIGHTNESS_DEFAULT	 9	  // Default (dimmed) brightness
+#define BRIGHTNESS_DEFAULT	 20	  // Default (dimmed) brightness
 #define BRIGHTNESS_MAX		 50	  // maximum brightness of CO2 indicator led
 #define BRIGHTNESS_THRESHOLD 500  // TODO calibrate Threshold value of dimmed brightness
 #define ANALOG_PIN			 35	  // Analog pin, to which light sensor is connected
@@ -108,12 +108,6 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 
 		detect_mhz(pixel);
 
-		// pixel->set(Pixel::Color().HSV(RED_HUE, 100, BRIGHTNESS_MAX));
-		// delay(2000);
-		// fade(pixel, GREEN_HUE, RED_HUE, BRIGHTNESS_MAX, 1000);
-		// pixel->set(Pixel::Color().HSV(GREEN_HUE, 100, BRIGHTNESS_MAX));
-		// delay(2000);
-
 		// Enable auto-calibration
 		mhz19b.setAutoCalibration(true);
 
@@ -164,10 +158,10 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 				int duration = 1500;
 				Serial.println("Warming up");
 
-				fadeIn(pixel, ORANGE_HUE, 100, BRIGHTNESS_MAX, duration);
+				fadeIn(pixel, ORANGE_HUE, 100, BRIGHTNESS_DEFAULT, duration);
 				delay(1 * 1000);
 
-				fadeOut(pixel, ORANGE_HUE, 100, BRIGHTNESS_MAX, duration);
+				fadeOut(pixel, ORANGE_HUE, 100, BRIGHTNESS_DEFAULT, duration);
 				delay(1 * 1000);
 
 				tick = tick + 5;
@@ -209,15 +203,15 @@ struct DEV_AirQualitySensor : Service::AirQualitySensor { // A standalone Air Qu
 				// 1000+        -> red
 				if (co2Level->getVal() >= 1000) {
 					LOG1("Red color\n");
-					fadeColor(pixel, current_hue, RED_HUE, BRIGHTNESS_MAX, 1000);
+					fadeColor(pixel, current_hue, RED_HUE, BRIGHTNESS_DEFAULT, 1000);
 					current_hue = RED_HUE;
 				} else if (co2Level->getVal() >= 800) {
 					LOG1("Yellow color\n");
-					fadeColor(pixel, current_hue, ORANGE_HUE, BRIGHTNESS_MAX, 1000);
+					fadeColor(pixel, current_hue, ORANGE_HUE, BRIGHTNESS_DEFAULT, 1000);
 					current_hue = ORANGE_HUE;
 				} else if (co2Level->getVal() >= 400) {
 					LOG1("Green color\n");
-					fadeColor(pixel, current_hue, GREEN_HUE, BRIGHTNESS_MAX, 1000);
+					fadeColor(pixel, current_hue, GREEN_HUE, BRIGHTNESS_DEFAULT, 1000);
 					current_hue = GREEN_HUE;
 				}
 
@@ -385,10 +379,10 @@ void detect_mhz(Pixel *pixel) {
 	// Detect sensor
 	Serial.println("Detecting MH-Z19B");
 	while (!mhz19b.detect()) {
-		fadeIn(pixel, RED_HUE, 100, BRIGHTNESS_MAX, duration);
+		fadeIn(pixel, RED_HUE, 100, BRIGHTNESS_DEFAULT, duration);
 		delay(1 * 1000);
 
-		fadeOut(pixel, RED_HUE, 100, BRIGHTNESS_MAX, duration);
+		fadeOut(pixel, RED_HUE, 100, BRIGHTNESS_DEFAULT, duration);
 		delay(1 * 1000);
 	};
 	Serial.println("Sensor detected!");
